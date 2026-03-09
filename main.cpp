@@ -2,75 +2,108 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <fstream>
+#include <iomanip>
+#include <cctype>
 
 // 全局常量
-const wchar_t* g_szClassName = L"DragDropWindowClass";
-const int WM_DISPLAY_DRAG_DATA = WM_USER + 1; // 自定义消息，用于更新窗口显示
+const wchar_t* g_szClassName = L"HexViewWindowClass";
+const int WM_DISPLAY_HEX_DATA = WM_USER + 1;
+const int PAGE_SIZE = 4096; // 每页显示n字节
 
 // 全局变量
-std::vector<std::wstring> g_dragPaths;       // 存储拖拽的文件/目录路径
-HFONT g_hConsoleFont = NULL;                 // 控制台风格字体
+std::vector<unsigned char> g_fileData;    // 存储文件二进制内容
+std::wstring g_currentFileName;           // 当前拖拽的文件名
+int g_currentPage = 0;                    // 当前页码（从0开始）
+HFONT g_hConsoleFont = NULL;              // 控制台等宽字体
 
 // 窗口过程函数声明
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-// 辅助函数：拼接路径为显示文本
-std::wstring JoinPaths(const std::vector<std::wstring>& paths) {
+std::wstring BinaryToHex(const std::vector<unsigned char>& data, int page) {
     std::wostringstream oss;
-    for (size_t i = 0; i < paths.size(); ++i) {
-        // oss << L"[" << (i + 1) << L"] " << paths[i] << L"\r\n";
-        oss << paths[i];
-        break;
+    if (data.empty()) {
+        return oss.str();
     }
+
+    // 计算当前页的起始/结束位置
+    int startIdx = page * PAGE_SIZE;
+    if (startIdx >= (int)data.size()) {
+        return oss.str();
+    }
+    int endIdx = (page + 1) * PAGE_SIZE;
+    if (endIdx >= (int)data.size()) {
+        endIdx = data.size() - 1;
+    }
+    
+    // 关键：先设置流为16进制输出模式 十六进制字母（A-F）显示为大写（如 1A 而非 1a）
+    oss << std::hex << std::uppercase;
+
+    for (int i = startIdx; i <= endIdx; i += 1) {
+        // 此时输出 (int)data[i]，就会以16进制显示
+        // std::setw(2) 确保输出占 2 个字符宽度（不足补 0，如 05 而非 5）
+        // std::setfill(L'0')   宽度不足时用 0 填充（而非空格）
+        oss << std::setw(2) << std::setfill(L'0') << (unsigned int)data[i];
+    }
+
     return oss.str();
 }
 
-// 通用绘制函数（核心：自适应显示逻辑）
-void DrawDragText(HWND hwnd) {
+// 通用绘制函数（16进制内容自适应显示）
+void DrawHexText(HWND hwnd) {
     HDC hdc = GetDC(hwnd);
     if (!hdc) return;
 
-    // 1. 获取当前窗口客户区大小（自适应核心）
+    // 1. 获取当前窗口客户区大小
     RECT rcClient;
     GetClientRect(hwnd, &rcClient);
 
-    // 2. 设置黑底白字样式
-    FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH)); // 黑色背景
-    SetTextColor(hdc, RGB(255, 255, 255));                         // 白色文本
-    SetBkMode(hdc, TRANSPARENT);                                   // 透明文本背景
+    // 2. 黑底白字样式
+    FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+    SetTextColor(hdc, RGB(255, 255, 255));
+    SetBkMode(hdc, TRANSPARENT);
 
-    // 3. 使用控制台等宽字体
+    // 3. 控制台等宽字体（必须等宽，否则16进制对齐混乱）
     HFONT hOldFont = NULL;
     if (g_hConsoleFont) {
         hOldFont = (HFONT)SelectObject(hdc, g_hConsoleFont);
     }
 
-    // 4. 拼接显示文本
-    std::wstring displayText = JoinPaths(g_dragPaths);
-    if (g_dragPaths.empty()) {
-        // displayText = L"ready..."; // 无拖拽时的提示
-    }
+    // 4. 生成16进制显示文本
+    std::wstring hexText = BinaryToHex(g_fileData, g_currentPage);
 
-    // 5. 自适应绘制文本（关键：DrawText支持自动换行）
+    // 5. 自适应绘制（支持自动换行，确保翻页后内容适配窗口）
     RECT rcText = rcClient;
     rcText.left += 10;
     rcText.top += 10;
     rcText.right -= 10;
     rcText.bottom -= 10;
 
-
-    // 6. 修复：DrawText参数（关键！DT_EDITCONTROL + DT_WORDBREAK 实现任意字符换行）
-    // DT_EDITCONTROL：模拟编辑框换行逻辑，支持任意字符处换行（解决路径无空格不换行问题）
-    // DT_WORDBREAK：基础换行
-    // DT_LEFT：左对齐
-    // DT_NOCLIP：不裁剪文本（确保尾部字符能显示）
+    // DT_EDITCONTROL+DT_WORDBREAK：任意字符换行；DT_LEFT：左对齐；DT_NOCLIP：不裁剪
     UINT drawFlags = DT_WORDBREAK | DT_LEFT | DT_NOCLIP | DT_EDITCONTROL;
-    DrawText(hdc, displayText.c_str(), -1, &rcText, drawFlags);
-
+    DrawText(hdc, hexText.c_str(), -1, &rcText, drawFlags);
 
     // 6. 释放资源
     if (hOldFont) SelectObject(hdc, hOldFont);
     ReleaseDC(hwnd, hdc);
+}
+
+// 读取文件二进制内容
+bool ReadFileToBinary(const std::wstring& filePath, std::vector<unsigned char>& outData) {
+    outData.clear();
+    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) return false;
+
+    // 获取文件大小并分配缓冲区
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    outData.resize(size);
+    if (!file.read((char*)outData.data(), size)) {
+        outData.clear();
+        return false;
+    }
+    return true;
 }
 
 // 注册窗口类
@@ -80,7 +113,7 @@ BOOL RegisterWindowClass(HINSTANCE hInstance) {
     wc.lpfnWndProc   = WndProc;
     wc.hInstance     = hInstance;
     wc.lpszClassName = g_szClassName;
-    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH); // 黑色背景
+    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
 
     return RegisterClassEx(&wc) != 0;
@@ -95,9 +128,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HWND hwnd = CreateWindowEx(
         WS_EX_CLIENTEDGE,
         g_szClassName,
-        L"console",
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+        L"Console",
+        WS_OVERLAPPEDWINDOW | WS_VSCROLL, // 加垂直滚动条，方便查看多内容
+        CW_USEDEFAULT, CW_USEDEFAULT, 1000, 700,
         NULL, NULL, hInstance, NULL
     );
 
@@ -108,9 +141,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     DragAcceptFiles(hwnd, TRUE); // 启用拖拽
 
-    // 创建控制台等宽字体
+    // 创建等宽字体（Consolas，确保16进制对齐）
     g_hConsoleFont = CreateFont(
-        16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+        14,                  // 小字号，显示更多内容
+        0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
         FIXED_PITCH | FF_MODERN, L"Consolas"
     );
@@ -125,55 +159,66 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         DispatchMessage(&msg);
     }
 
-    // 释放字体资源
+    // 释放资源
     if (g_hConsoleFont) DeleteObject(g_hConsoleFont);
     return (int)msg.wParam;
 }
 
-// 窗口过程函数（处理拖拽、大小改变、刷新）
+// 窗口过程函数（核心：拖拽、翻页、重绘）
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
-        // 1. 处理拖拽放下事件
+        // 1. 处理文件拖拽
         case WM_DROPFILES: {
             HDROP hDrop = (HDROP)wParam;
-            g_dragPaths.clear();
-
-            UINT fileCount = DragQueryFile(hDrop, 0xFFFFFFFF, NULL, 0);
             wchar_t szFilePath[MAX_PATH] = {0};
-            for (UINT i = 0; i < fileCount; ++i) {
-                if (DragQueryFile(hDrop, i, szFilePath, MAX_PATH)) {
-                    g_dragPaths.push_back(szFilePath);
+            
+            // 只读取第一个拖拽的文件（可扩展为多文件）
+            if (DragQueryFile(hDrop, 0, szFilePath, MAX_PATH)) {
+                g_currentFileName = szFilePath;
+                g_currentPage = 0; // 重置页码为第一页
+                
+                // 读取文件二进制内容
+                if (!ReadFileToBinary(g_currentFileName, g_fileData)) {
+                    MessageBox(hwnd, L"文件读取失败！", L"错误", MB_ICONEXCLAMATION | MB_OK);
+                    g_fileData.clear();
                 }
             }
             DragFinish(hDrop);
 
-            // 拖拽后立即重绘
-            InvalidateRect(hwnd, NULL, TRUE); // 标记窗口为需要重绘
-            UpdateWindow(hwnd);               // 立即重绘
-            break;
-        }
-
-        // 2. 处理窗口大小改变（核心：自适应触发）
-        case WM_SIZE: {
-            // 窗口大小改变时重绘文本
+            // 重绘显示16进制内容
             InvalidateRect(hwnd, NULL, TRUE);
             UpdateWindow(hwnd);
             break;
         }
 
-        // 3. 处理窗口重绘请求（系统触发：比如窗口被遮挡后恢复）
+        // 2. 处理按键（F2翻页）
+        case WM_KEYDOWN: {
+            if (wParam == VK_F2) { // F2键
+                g_currentPage++; // 页码+1
+                // 超出总页数时重置为0（循环翻页，也可改为停在最后一页）
+                int totalPages = (g_fileData.size() + PAGE_SIZE - 1) / PAGE_SIZE;
+                if (g_currentPage >= totalPages) {
+                    g_currentPage = 0;
+                }
+                InvalidateRect(hwnd, NULL, TRUE);
+                UpdateWindow(hwnd);
+            }
+            break;
+        }
+
+        // 3. 窗口大小改变时重绘
+        case WM_SIZE: {
+            InvalidateRect(hwnd, NULL, TRUE);
+            UpdateWindow(hwnd);
+            break;
+        }
+
+        // 4. 系统触发重绘
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
-            EndPaint(hwnd, &ps); // 此处仅标记绘制完成，实际绘制在DrawDragText中
-            DrawDragText(hwnd);  // 执行自适应绘制
-            break;
-        }
-
-        // 4. 自定义消息（兼容旧逻辑）
-        case WM_DISPLAY_DRAG_DATA: {
-            InvalidateRect(hwnd, NULL, TRUE);
-            UpdateWindow(hwnd);
+            EndPaint(hwnd, &ps);
+            DrawHexText(hwnd);
             break;
         }
 
@@ -182,9 +227,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             PostQuitMessage(0);
             break;
 
-        // 默认消息处理
         default:
             return DefWindowProc(hwnd, msg, wParam, lParam);
     }
     return 0;
 }
+
