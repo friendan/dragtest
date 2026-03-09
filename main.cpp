@@ -9,7 +9,7 @@
 // 全局常量
 const wchar_t* g_szClassName = L"HexViewWindowClass";
 const int WM_DISPLAY_HEX_DATA = WM_USER + 1;
-const int PAGE_SIZE = 4096; // 每页显示n字节
+const int PAGE_SIZE = 16; // 每页显示n字节
 
 // 全局变量
 std::vector<unsigned char> g_fileData;    // 存储文件二进制内容
@@ -73,11 +73,12 @@ void DrawHexText(HWND hwnd) {
     std::wstring hexText = BinaryToHex(g_fileData, g_currentPage);
 
     // 5. 自适应绘制（支持自动换行，确保翻页后内容适配窗口）
+    int offset = 20;
     RECT rcText = rcClient;
-    rcText.left += 10;
-    rcText.top += 10;
-    rcText.right -= 10;
-    rcText.bottom -= 10;
+    rcText.left += offset;
+    rcText.top += offset;
+    rcText.right -= offset;
+    rcText.bottom -= offset;
 
     // DT_EDITCONTROL+DT_WORDBREAK：任意字符换行；DT_LEFT：左对齐；DT_NOCLIP：不裁剪
     UINT drawFlags = DT_WORDBREAK | DT_LEFT | DT_NOCLIP | DT_EDITCONTROL;
@@ -143,10 +144,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // 创建等宽字体（Consolas，确保16进制对齐）
     g_hConsoleFont = CreateFont(
-        14,                  // 小字号，显示更多内容
+        26,                  // 小字号，显示更多内容
         0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-        FIXED_PITCH | FF_MODERN, L"Consolas"
+        // FIXED_PITCH | FF_MODERN, L"Consolas"
+        FIXED_PITCH | FF_MODERN, L"微软雅黑"
     );
 
     ShowWindow(hwnd, nCmdShow);
@@ -198,7 +200,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 // 超出总页数时重置为0（循环翻页，也可改为停在最后一页）
                 int totalPages = (g_fileData.size() + PAGE_SIZE - 1) / PAGE_SIZE;
                 if (g_currentPage >= totalPages) {
-                    g_currentPage = 0;
+                    // g_currentPage = 0;
                 }
                 InvalidateRect(hwnd, NULL, TRUE);
                 UpdateWindow(hwnd);
