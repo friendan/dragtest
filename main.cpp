@@ -9,16 +9,85 @@
 // 全局常量
 const wchar_t* g_szClassName = L"HexViewWindowClass";
 const int WM_DISPLAY_HEX_DATA = WM_USER + 1;
-const int PAGE_SIZE = 16; // 每页显示n字节
+const int PAGE_SIZE = 512; // 每页显示n字节
+const int GRID_SIZE = 16;
+
 
 // 全局变量
 std::vector<unsigned char> g_fileData;    // 存储文件二进制内容
 std::wstring g_currentFileName;           // 当前拖拽的文件名
 int g_currentPage = 0;                    // 当前页码（从0开始）
 HFONT g_hConsoleFont = NULL;              // 控制台等宽字体
+// HBRUSH g_hBrush_255_255_255 = CreateSolidBrush(RGB(255, 0, 0));
+// HBRUSH g_hBrush_255_255_0 = CreateSolidBrush(RGB(255, 0, 0));
+// HBRUSH g_hBrush_0_255_255 = CreateSolidBrush(RGB(255, 0, 0));
+HBRUSH gBrushList[3];
 
 // 窗口过程函数声明
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+// 核心：0-255 每个字节对应唯一、易识别的汉字（无复用）
+// 选字原则：笔画简单、无形近字（如 零/一/二 而非 林/琳/淋）、OCR 识别无歧义
+wchar_t byteToHanzi(unsigned char byte) {
+    // 0-255 完整映射表（按顺序排列，每个位置对应一个字节值）
+    const wchar_t hanziTable[256] = {
+        // 0-9
+        L'零', L'一', L'二', L'三', L'四', L'五', L'六', L'七', L'八', L'九',
+        // 10-19
+        L'十', L'壹', L'贰', L'叁', L'肆', L'伍', L'陆', L'柒', L'捌', L'玖',
+        // 20-29
+        L'廿', L'甲', L'乙', L'丙', L'丁', L'戊', L'己', L'庚', L'辛', L'壬',
+        // 30-39
+        L'癸', L'子', L'丑', L'寅', L'卯', L'辰', L'巳', L'午', L'未', L'申',
+        // 40-49
+        L'酉', L'戌', L'亥', L'金', L'木', L'水', L'火', L'土', L'日', L'月',
+        // 50-59
+        L'星', L'风', L'云', L'雷', L'雨', L'山', L'石', L'田', L'禾', L'米',
+        // 60-69
+        L'竹', L'瓜', L'果', L'花', L'草', L'虫', L'鱼', L'鸟', L'兽', L'人',
+        // 70-79
+        L'口', L'手', L'足', L'目', L'耳', L'鼻', L'舌', L'牙', L'眉', L'发',
+        // 80-89
+        L'心', L'肝', L'脾', L'肺', L'肾', L'头', L'身', L'背', L'腰', L'腿',
+        // 90-99
+        L'脚', L'天', L'地', L'光', L'电', L'气', L'声', L'香', L'味', L'触',
+        // 100-109
+        L'刀', L'弓', L'车', L'舟', L'戈', L'斤', L'爪', L'瓦', L'皿', L'网',
+        // 110-119
+        L'巾', L'衣', L'食', L'住', L'行', L'马', L'牛', L'羊', L'犬', L'豕',
+        // 120-129
+        L'鹿', L'象', L'虎', L'龙', L'凤', L'龟', L'蛇', L'蛙', L'蝉', L'蜂',
+        // 130-139
+        L'燕', L'雀', L'鸦', L'鸽', L'鸡', L'鸭', L'鹅', L'猫', L'兔', L'狐',
+        // 140-149
+        L'狸', L'熊', L'狼', L'豹', L'狮', L'猴', L'猿', L'鼠', L'蚁', L'蛾',
+        // 150-159
+        L'蝶', L'蚊', L'蝇', L'虾', L'蟹', L'贝', L'蚌', L'螺', L'蚪', L'苗',
+        // 160-169
+        L'芽', L'根', L'叶', L'枝', L'干', L'皮', L'毛', L'骨', L'血', L'汗',
+        // 170-179
+        L'泪', L'油', L'酒', L'茶', L'汤', L'盐', L'糖', L'醋', L'酱', L'椒',
+        // 180-189
+        L'葱', L'姜', L'蒜', L'瓜', L'果', L'桃', L'李', L'杏', L'梨', L'枣',
+        // 190-199
+        L'橘', L'橙', L'柚', L'梅', L'兰', L'菊', L'荷', L'莲', L'菱', L'藕',
+        // 200-209
+        L'麦', L'豆', L'麻', L'棉', L'丝', L'布', L'纱', L'线', L'针', L'钉',
+        // 210-219
+        L'锤', L'锯', L'斧', L'铲', L'锄', L'犁', L'耙', L'镰', L'刀', L'枪',
+        // 220-229
+        L'剑', L'弓', L'箭', L'盾', L'甲', L'盔', L'袍', L'靴', L'帽', L'袜',
+        // 230-239
+        L'鞋', L'裤', L'裙', L'衫', L'袄', L'被', L'褥', L'枕', L'席', L'帘',
+        // 240-249
+        L'窗', L'门', L'墙', L'房', L'屋', L'楼', L'梯', L'阶', L'庭', L'院',
+        // 250-255
+        L'巷', L'街', L'路', L'桥', L'河', L'海'
+    };
+
+    // 直接返回对应字节的汉字（byte 范围 0-255，无越界风险）
+    return hanziTable[byte];
+}
 
 std::wstring BinaryToHex(const std::vector<unsigned char>& data, int page) {
     std::wostringstream oss;
@@ -39,15 +108,67 @@ std::wstring BinaryToHex(const std::vector<unsigned char>& data, int page) {
     // 关键：先设置流为16进制输出模式 十六进制字母（A-F）显示为大写（如 1A 而非 1a）
     oss << std::hex << std::uppercase;
 
-    for (int i = startIdx; i <= endIdx; i += 1) {
+    for (int i = startIdx; i < endIdx; i += 1) {
         // 此时输出 (int)data[i]，就会以16进制显示
         // std::setw(2) 确保输出占 2 个字符宽度（不足补 0，如 05 而非 5）
         // std::setfill(L'0')   宽度不足时用 0 填充（而非空格）
-        oss << std::setw(2) << std::setfill(L'0') << (unsigned int)data[i];
+        unsigned byte = (unsigned int)data[i];
+        wchar_t hanzi = byteToHanzi(byte); // 映射为唯一汉字
+        // oss << std::setw(2) << std::setfill(L'0') << byte << " ";
+        oss << hanzi << " ";
     }
 
     return oss.str();
 }
+
+
+void DrawGrid(HWND hwnd) {
+    HDC hdc = GetDC(hwnd);
+    RECT rcClient;
+    GetClientRect(hwnd, &rcClient);
+    FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+    int width  = rcClient.right - rcClient.left;
+    int height = rcClient.bottom - rcClient.top;
+    int startX = 16;
+    int startY = 16;
+    int xMax = width - GRID_SIZE*2;
+    int yMax = height - GRID_SIZE*2;
+
+    int color = 0;
+    RECT rect;
+    int colCount = 0;
+    int xOffset = 0;
+    for(int x = startX; x < xMax; x += GRID_SIZE){
+        for(int y = startY; y < yMax; y += GRID_SIZE){
+            rect.left   = x + xOffset; 
+            rect.top    = y;
+            rect.right  = x + GRID_SIZE + xOffset;
+            rect.bottom = y + GRID_SIZE;
+            FillRect(hdc, &rect, gBrushList[color%3]);
+            color = color + 1;
+        }
+        colCount = colCount + 1;
+        xOffset = xOffset + GRID_SIZE;
+        if(colCount >= 6){
+            // break;
+        }
+    }
+   
+    // HBRUSH hRedBrush = CreateSolidBrush(RGB(255, 0, 0));
+    // HBRUSH hRedBrush = CreateSolidBrush(RGB(0, 255, 0));
+    // HBRUSH hRedBrush = CreateSolidBrush(RGB(255, 255, 255));
+    // RECT rect;
+    // rect.left   = 50;    // 左边界
+    // rect.top    = 50;    // 上边界
+    // rect.right  = 50 + GRID_SIZE;// 右边界（左+宽度）
+    // rect.bottom = 50 + GRID_SIZE;// 下边界（上+高度）
+    // FillRect(hdc, &rect, hRedBrush);
+    // DeleteObject(hRedBrush); // 释放画刷资源（必须释放，避免内存泄漏）
+
+
+    ReleaseDC(hwnd, hdc);
+}
+
 
 // 通用绘制函数（16进制内容自适应显示）
 void DrawHexText(HWND hwnd) {
@@ -126,6 +247,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
 
+    gBrushList[0] = CreateSolidBrush(RGB(255, 0, 0));
+    gBrushList[1] = CreateSolidBrush(RGB(0, 255, 0));
+    gBrushList[2] = CreateSolidBrush(RGB(255, 255, 255));
+
     HWND hwnd = CreateWindowEx(
         WS_EX_CLIENTEDGE,
         g_szClassName,
@@ -144,7 +269,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // 创建等宽字体（Consolas，确保16进制对齐）
     g_hConsoleFont = CreateFont(
-        26,                  // 小字号，显示更多内容
+        30,                  // 小字号，显示更多内容
         0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
         // FIXED_PITCH | FF_MODERN, L"Consolas"
@@ -220,13 +345,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
             EndPaint(hwnd, &ps);
-            DrawHexText(hwnd);
+            // DrawHexText(hwnd);
+            DrawGrid(hwnd);
             break;
         }
 
         // 5. 窗口销毁
         case WM_DESTROY:
             PostQuitMessage(0);
+            DeleteObject(gBrushList[0]); // 释放画刷资源（必须释放，避免内存泄漏）
+            DeleteObject(gBrushList[1]); // 释放画刷资源（必须释放，避免内存泄漏）
+            DeleteObject(gBrushList[2]); // 释放画刷资源（必须释放，避免内存泄漏）
             break;
 
         default:
