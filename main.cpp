@@ -131,7 +131,7 @@ void DrawGrid(HWND hwnd) {
     int height = rcClient.bottom - rcClient.top;
     int startX = 16;
     int startY = 16;
-    int xMax = width - GRID_SIZE*2;
+    int xMax = width - GRID_SIZE;
     int yMax = height - GRID_SIZE*2;
 
     int color = 0;
@@ -144,11 +144,14 @@ void DrawGrid(HWND hwnd) {
             rect.top    = y;
             rect.right  = x + GRID_SIZE + xOffset;
             rect.bottom = y + GRID_SIZE;
+            if(rect.right > xMax){
+                break;
+            }
             FillRect(hdc, &rect, gBrushList[color%3]);
             color = color + 1;
         }
         colCount = colCount + 1;
-        xOffset = xOffset + GRID_SIZE;
+        xOffset = xOffset + 5;
         if(colCount >= 6){
             // break;
         }
