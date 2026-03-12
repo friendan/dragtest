@@ -31,7 +31,7 @@ set(MainAppSrcList
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${MainAppSrcList})
 add_executable(MainApp WIN32 ${MainAppSrcList})
-target_link_libraries(MainApp PRIVATE shell32.lib)
+target_link_libraries(MainApp PRIVATE shell32.lib comctl32.lib)
 
 
 
