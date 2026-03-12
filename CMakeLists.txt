@@ -34,6 +34,21 @@ add_executable(MainApp WIN32 ${MainAppSrcList})
 target_link_libraries(MainApp PRIVATE shell32.lib comctl32.lib)
 
 
+#=================================================
+set(SlaveAppSrcList
+	AppConstants.h
+	SlaveWindow.h
+	SlaveWindow.cpp
+	DrawUtil.h
+	DrawUtil.cpp
+	AppUtil.h
+	AppUtil.cpp
+	secondary.cpp
+)
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SlaveAppSrcList})
+add_executable(GridApp WIN32 ${SlaveAppSrcList})
+target_link_libraries(GridApp PRIVATE shell32.lib comctl32.lib)
 
 
 
