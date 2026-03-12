@@ -37,7 +37,7 @@ namespace SlaveWindow
         gMainWindow = CreateWindowEx(
             WS_EX_CLIENTEDGE,
             g_szClassName,
-            L"Console",
+            L"GridMap",
             WS_OVERLAPPEDWINDOW | WS_VSCROLL, // 加垂直滚动条，方便查看多内容
             CW_USEDEFAULT, CW_USEDEFAULT, 1000, 700,
             NULL, NULL, hInstance, NULL
@@ -57,9 +57,9 @@ namespace SlaveWindow
         gBrushList[2] = CreateSolidBrush(AppConst::GRID_COLOR_C);
 
         // 初始化状态栏文本
-        UpdateStatusBarText(0, L"未选择文件");
-        UpdateStatusBarText(1, L"大小：0 字节");
-        UpdateStatusBarText(2, L"F2 刷新 | 拖拽文件到窗口");
+        UpdateStatusBarText(0, L"ready");
+        UpdateStatusBarText(1, L"0");
+        UpdateStatusBarText(2, L"");
 
         ShowWindow(gMainWindow, nCmdShow);
         UpdateWindow(gMainWindow);
