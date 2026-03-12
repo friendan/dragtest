@@ -59,9 +59,18 @@ namespace AppUtil
         file.close();
         return BinaryToHexString(buffer);
 	}
-
-
-
+	
+	std::string StringToHexString(const std::string& data){
+	    std::ostringstream oss;
+	    oss << std::hex << std::uppercase << std::setfill('0');
+	    for (unsigned char c : data)  // 用unsigned char避免符号位问题（如0x80以上字符）
+	    {
+	        unsigned int charValue = static_cast<unsigned int>(c);  // 将char转为无符号整数，确保按ASCII值解析（而非字符本身）
+	        oss << std::setw(2) << charValue;
+	    }
+	    return oss.str();
+	}
+	
 
 } // namespace AppUtil end
 

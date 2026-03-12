@@ -17,7 +17,9 @@ namespace AppUtil
 	// 示例：输入 {0x12, 0xAB, 0x05} → 输出 "12AB05"（无分隔符）
     std::string BinaryToHexString(const std::vector<unsigned char>& binVector);
 
-
+    // 把指定字符串转换为16进制字符串
+    // 示例：输入 A → 输出 "41"（无分隔符）
+    std::string StringToHexString(const std::string& data);
 
 
 

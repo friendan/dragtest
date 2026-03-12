@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include "AppConstants.h"
+#include "AppUtil.h"
 
 namespace DrawUtil
 {
@@ -49,6 +50,9 @@ namespace DrawUtil
 
         std::vector<RECT> rectVector;
         GetWindowGridVector(hwnd, rectVector);
+
+        std::string hexStr = AppUtil::StringToHexString(data);
+        
 
         WCHAR szTitle[1024] = {0};
         wsprintf(szTitle, L"%s %d %d|%d %d"
