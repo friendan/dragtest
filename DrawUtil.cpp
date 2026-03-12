@@ -1,0 +1,115 @@
+﻿#pragma once
+#include <windows.h>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <map>
+
+namespace DrawUtil
+{
+   
+   void DrawGrid(HWND hwnd) {
+        // HDC hdc = GetDC(hwnd);
+        // RECT rcClient;
+        // GetClientRect(hwnd, &rcClient);
+        // FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+        // int width  = rcClient.right - rcClient.left;
+        // int height = rcClient.bottom - rcClient.top;
+        // int startX = 16;
+        // int startY = 16;
+        // int xMax = width - GRID_SIZE;
+        // int yMax = height - GRID_SIZE*2;
+
+        // int color = 0;
+        // RECT rect;
+        // int colCount = 0;
+        // int xOffset = 0;
+        // int gridNum = 0;
+        // for(int x = startX; x < xMax; x += GRID_SIZE){
+        //     for(int y = startY; y < yMax; y += GRID_SIZE){
+        //         rect.left   = x + xOffset; 
+        //         rect.top    = y;
+        //         rect.right  = x + GRID_SIZE + xOffset;
+        //         rect.bottom = y + GRID_SIZE;
+        //         if(rect.right > xMax){
+        //             break;
+        //         }
+        //         FillRect(hdc, &rect, gBrushList[color%3]);
+        //         color = color + 1;
+        //         gridNum = gridNum + 1;
+        //     }
+        //     colCount = colCount + 1;
+        //     xOffset = xOffset + 1;
+        //     if(colCount >= 6){
+        //         // break;
+        //     }
+        // }
+
+        // WCHAR szTitle[256] = {0};
+        // wsprintf(szTitle, L"Console：%d %d|%d|%d %d|", width, height, colCount, gridNum, gridNum/3);
+        // SetWindowText(hwnd, szTitle);
+       
+        // HBRUSH hRedBrush = CreateSolidBrush(RGB(255, 0, 0));
+        // HBRUSH hRedBrush = CreateSolidBrush(RGB(0, 255, 0));
+        // HBRUSH hRedBrush = CreateSolidBrush(RGB(255, 255, 255));
+        // RECT rect;
+        // rect.left   = 50;    // 左边界
+        // rect.top    = 50;    // 上边界
+        // rect.right  = 50 + GRID_SIZE;// 右边界（左+宽度）
+        // rect.bottom = 50 + GRID_SIZE;// 下边界（上+高度）
+        // FillRect(hdc, &rect, hRedBrush);
+        // DeleteObject(hRedBrush); // 释放画刷资源（必须释放，避免内存泄漏）
+
+
+        // ReleaseDC(hwnd, hdc);
+    }
+
+    
+    // 通用绘制函数（16进制内容自适应显示）
+    void DrawHexText(HWND hwnd) {
+        HDC hdc = GetDC(hwnd);
+        if (!hdc) return;
+
+        // 1. 获取当前窗口客户区大小
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+
+        // 2. 黑底白字样式
+        FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+        SetTextColor(hdc, RGB(255, 255, 255));
+        SetBkMode(hdc, TRANSPARENT);
+
+        // 3. 控制台等宽字体（必须等宽，否则16进制对齐混乱）
+        // HFONT hOldFont = NULL;
+        // if (g_hConsoleFont) {
+        //     hOldFont = (HFONT)SelectObject(hdc, g_hConsoleFont);
+        // }
+
+        // 4. 生成16进制显示文本
+        // std::wstring hexText = BinaryToHex(g_fileData, g_currentPage);
+
+        // 5. 自适应绘制（支持自动换行，确保翻页后内容适配窗口）
+        int offset = 20;
+        RECT rcText = rcClient;
+        rcText.left += offset;
+        rcText.top += offset;
+        rcText.right -= offset;
+        rcText.bottom -= offset;
+
+        // DT_EDITCONTROL+DT_WORDBREAK：任意字符换行；DT_LEFT：左对齐；DT_NOCLIP：不裁剪
+        // UINT drawFlags = DT_WORDBREAK | DT_LEFT | DT_NOCLIP | DT_EDITCONTROL;
+        // DrawText(hdc, hexText.c_str(), -1, &rcText, drawFlags);
+
+        // 6. 释放资源
+        // if (hOldFont) SelectObject(hdc, hOldFont);
+        // ReleaseDC(hwnd, hdc);
+    }
+
+
+
+
+
+
+
+} // namespace DrawUtil end
+

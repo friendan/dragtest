@@ -17,13 +17,21 @@ add_definitions(-DUNICODE -D_UNICODE)
 # 强制MSVC编译器用UTF-8解析源码
 add_compile_options(/utf-8)
 
-file(GLOB SRCS "*.h" "*.cpp")
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SRCS})
-#add_executable(${PROJECT_NAME} ${SRCS})
-add_executable(${PROJECT_NAME} WIN32 ${SRCS})
+#file(GLOB SRCS "*.h" "*.cpp")
+set(MainAppSrcList
+	AppConstants.h
+	MainWindow.h
+	MainWindow.cpp
+	DrawUtil.h
+	DrawUtil.cpp
+	AppUtil.h
+	AppUtil.cpp
+	main.cpp
+)
 
-# 链接拖拽功能必需的shell32.lib
-target_link_libraries(${PROJECT_NAME} PRIVATE shell32.lib)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${MainAppSrcList})
+add_executable(MainApp WIN32 ${MainAppSrcList})
+target_link_libraries(MainApp PRIVATE shell32.lib)
 
 
 
