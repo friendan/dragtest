@@ -4,11 +4,68 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include "AppConstants.h"
 
 namespace DrawUtil
 {
-   
-   void DrawGrid(HWND hwnd) {
+    void GetWindowGridVector(HWND hwnd, std::vector<RECT>& rectVector){
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+
+        int width  = rcClient.right - rcClient.left;
+        int height = rcClient.bottom - rcClient.top;
+        int startX = AppConst::GRID_SIZE;
+        int startY = AppConst::GRID_SIZE;
+        int xMax = width  - AppConst::GRID_SIZE;
+        int yMax = height - AppConst::GRID_SIZE;
+
+        int xOffset = 0;
+        int yOffset = 0;
+        for(int x = startX; x < xMax; x += AppConst::GRID_SIZE){
+            for(int y = startY; y < yMax; y += AppConst::GRID_SIZE){
+                RECT rect;
+                rect.left   = x + xOffset; 
+                rect.top    = y + yOffset;
+                rect.right  = x + AppConst::GRID_SIZE + xOffset;
+                rect.bottom = y + AppConst::GRID_SIZE + yOffset;
+                if(rect.right > xMax || rect.bottom > yMax){
+                    break;
+                }
+                rectVector.push_back(rect);
+            }
+            xOffset += AppConst::GRID_OFFSET_X;
+            yOffset += AppConst::GRID_OFFSET_Y;
+        }
+    }
+
+    void DrawDataGrid(HWND hwnd, const std::string& data)
+    {
+        HDC hdc = GetDC(hwnd);
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+        int width  = rcClient.right - rcClient.left;
+        int height = rcClient.bottom - rcClient.top;
+
+        std::vector<RECT> rectVector;
+        GetWindowGridVector(hwnd, rectVector);
+
+        WCHAR szTitle[1024] = {0};
+        wsprintf(szTitle, L"%s %d %d|%d %d"
+            , AppConst::SLAVE_APP_TITLE
+            , width
+            , height
+            , rectVector.size()
+            , rectVector.size() / 3
+        );
+        SetWindowText(hwnd, szTitle);
+
+        ReleaseDC(hwnd, hdc);
+    }
+
+
+
+    void DrawGrid(HWND hwnd) {
         // HDC hdc = GetDC(hwnd);
         // RECT rcClient;
         // GetClientRect(hwnd, &rcClient);

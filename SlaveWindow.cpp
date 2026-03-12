@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "SlaveWindow.h"
 #include "AppConstants.h"
+#include "DrawUtil.h"
 #include <commctrl.h>
 
 namespace SlaveWindow
@@ -197,6 +198,8 @@ namespace SlaveWindow
                 EndPaint(hwnd, &ps);
                 // DrawHexText(hwnd);
                 // DrawGrid(hwnd);
+                std::string data = "A";
+                DrawUtil::DrawDataGrid(hwnd, data);
                 break;
             }
 

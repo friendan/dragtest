@@ -7,8 +7,8 @@
 
 namespace DrawUtil
 {
-    
-
+    void DrawDataGrid(HWND hwnd, const std::string& data);
+    void GetWindowGridVector(HWND hwnd, std::vector<RECT>& rectVector);
 
 
 
