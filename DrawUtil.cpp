@@ -9,7 +9,7 @@
 
 namespace DrawUtil
 {
-    HBRUSH gBrushList[3];
+    HBRUSH gBrushList[3]; // 3个画刷对应三进制的3位
 
     void InitDraw(){
         gBrushList[0] = CreateSolidBrush(AppConst::GRID_COLOR_A);
@@ -18,7 +18,7 @@ namespace DrawUtil
     }
 
     void UnInitDraw(){
-        
+
     }
 
     void GetWindowGridVector(HWND hwnd, std::vector<RECT>& rectVector){
