@@ -14,7 +14,6 @@ namespace AppConst
     constexpr COLORREF GRID_COLOR_B = RGB(255, 255, 0);
     constexpr COLORREF GRID_COLOR_C = RGB(0, 255, 255);
     constexpr const wchar_t* SLAVE_APP_TITLE = L"GridMap";
-    
 
 
 

@@ -1,13 +1,13 @@
 ﻿#pragma once
 #include "MainWindow.h"
 #include "AppConstants.h"
+#include "DrawUtil.h"
 #include <commctrl.h>
 
 namespace MainWindow
 {
     const wchar_t* g_szClassName = L"HexViewWindowClass";
     const int WM_DISPLAY_HEX_DATA = WM_USER + 1;
-    HBRUSH gBrushList[3];
     HWND gMainWindow = NULL;
     HWND gStatusBar = NULL;  // 状态栏句柄
     const int STATUS_BAR_PARTS = 3; // 状态栏列数
@@ -50,11 +50,8 @@ namespace MainWindow
 
         // 创建状态栏（窗口创建后立即创建）
         CreateStatusBar(gMainWindow);
-
         DragAcceptFiles(gMainWindow, TRUE); // 启用拖拽
-        gBrushList[0] = CreateSolidBrush(AppConst::GRID_COLOR_A);
-        gBrushList[1] = CreateSolidBrush(AppConst::GRID_COLOR_B);
-        gBrushList[2] = CreateSolidBrush(AppConst::GRID_COLOR_C);
+        DrawUtil::InitDraw();
 
         ShowWindow(gMainWindow, nCmdShow);
         UpdateWindow(gMainWindow);
@@ -66,9 +63,7 @@ namespace MainWindow
             DispatchMessage(&msg);
         }
         
-        DeleteObject(gBrushList[0]); // 释放画刷资源
-        DeleteObject(gBrushList[1]);
-        DeleteObject(gBrushList[2]);
+        DrawUtil::UnInitDraw();
     }
 
     // 创建3列状态栏

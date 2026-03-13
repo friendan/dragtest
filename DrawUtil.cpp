@@ -9,6 +9,18 @@
 
 namespace DrawUtil
 {
+    HBRUSH gBrushList[3];
+
+    void InitDraw(){
+        gBrushList[0] = CreateSolidBrush(AppConst::GRID_COLOR_A);
+        gBrushList[1] = CreateSolidBrush(AppConst::GRID_COLOR_B);
+        gBrushList[2] = CreateSolidBrush(AppConst::GRID_COLOR_C);
+    }
+
+    void UnInitDraw(){
+        
+    }
+
     void GetWindowGridVector(HWND hwnd, std::vector<RECT>& rectVector){
         RECT rcClient;
         GetClientRect(hwnd, &rcClient);
@@ -50,6 +62,10 @@ namespace DrawUtil
 
         std::vector<RECT> rectVector;
         GetWindowGridVector(hwnd, rectVector);
+
+        for(char byte: hexStr){
+
+        }
 
         
 
