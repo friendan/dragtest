@@ -63,8 +63,9 @@ namespace DrawUtil
         std::vector<RECT> rectVector;
         GetWindowGridVector(hwnd, rectVector);
 
-        for(char byte: hexStr){
-
+        for(char hexChar: hexStr){
+            int charInt = AppConst::CHAR_TO_DEC_MAP[hexChar];
+            
         }
 
         
