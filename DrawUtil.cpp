@@ -65,6 +65,11 @@ namespace DrawUtil
 
         for(char hexChar: hexStr){
             int charInt = AppConst::CHAR_TO_DEC_MAP[hexChar];
+            int brushIndexs[3] = {
+                AppConst::BRUSH_TRIAD_TABLE[charInt][0],
+                AppConst::BRUSH_TRIAD_TABLE[charInt][1],
+                AppConst::BRUSH_TRIAD_TABLE[charInt][2]
+            };
             
         }
 
