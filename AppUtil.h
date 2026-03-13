@@ -22,9 +22,11 @@ namespace AppUtil
     std::string StringToHexString(const std::string& data);
 
 
+    std::wstring Utf8ToUtf16(const std::string& utf8Str);
+    std::string Utf16ToUtf8(const std::wstring& utf16Str);
 
-
-
+    void UpdateStatusBarText(HWND statusBar, int partIndex, const wchar_t* text); // 更新状态栏某列文本
+    void UpdateStatusBarText(HWND statusBar, int partIndex, const std::string& text);
 
 
 } // namespace AppUtil end

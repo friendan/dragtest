@@ -39,7 +39,7 @@ namespace DrawUtil
         }
     }
 
-    void DrawDataGrid(HWND hwnd, const std::string& data)
+    void DrawDataGrid(HWND hwnd, HWND statusBar, const std::string& hexStr)
     {
         HDC hdc = GetDC(hwnd);
         RECT rcClient;
@@ -51,7 +51,6 @@ namespace DrawUtil
         std::vector<RECT> rectVector;
         GetWindowGridVector(hwnd, rectVector);
 
-        std::string hexStr = AppUtil::StringToHexString(data);
         
 
         WCHAR szTitle[1024] = {0};
@@ -62,7 +61,8 @@ namespace DrawUtil
             , rectVector.size()
             , rectVector.size() / 3
         );
-        SetWindowText(hwnd, szTitle);
+        SetWindowTextW(hwnd, szTitle);
+        AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
 
         ReleaseDC(hwnd, hdc);
     }

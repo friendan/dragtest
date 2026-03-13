@@ -56,11 +56,6 @@ namespace MainWindow
         gBrushList[1] = CreateSolidBrush(AppConst::GRID_COLOR_B);
         gBrushList[2] = CreateSolidBrush(AppConst::GRID_COLOR_C);
 
-        // 初始化状态栏文本
-        UpdateStatusBarText(0, L"未选择文件");
-        UpdateStatusBarText(1, L"大小：0 字节");
-        UpdateStatusBarText(2, L"F2 刷新 | 拖拽文件到窗口");
-
         ShowWindow(gMainWindow, nCmdShow);
         UpdateWindow(gMainWindow);
 
@@ -110,15 +105,6 @@ namespace MainWindow
         SendMessage(gStatusBar, SB_SETPARTS, STATUS_BAR_PARTS, (LPARAM)gStatusBarWidths);
     }
 
-    // 更新状态栏指定列的文本
-    void UpdateStatusBarText(int partIndex, const wchar_t* text) {
-        if (gStatusBar == NULL || partIndex < 0 || partIndex >= STATUS_BAR_PARTS) {
-            return;
-        }
-        // SB_SETTEXT：设置指定列文本；0：绘制方式（普通）
-        SendMessage(gStatusBar, SB_SETTEXT, partIndex, (LPARAM)text);
-    }
-
     void RefreshWindow(HWND hwnd){
         InvalidateRect(hwnd, NULL, TRUE);
         UpdateWindow(hwnd);
@@ -138,8 +124,6 @@ namespace MainWindow
                 
                 // 只读取第一个拖拽的文件
                 if (DragQueryFile(hDrop, 0, szFilePath, MAX_PATH)) {
-                    // 示例：更新状态栏文本（实际可读取文件大小后更新）
-                    UpdateStatusBarText(0, szFilePath); // 第1列显示文件名
                     
                     // 可选：获取文件大小
                     WIN32_FILE_ATTRIBUTE_DATA fileData;
@@ -147,7 +131,6 @@ namespace MainWindow
                         ULONGLONG fileSize = (ULONGLONG)fileData.nFileSizeHigh << 32 | fileData.nFileSizeLow;
                         wchar_t szSizeText[50] = {0};
                         wsprintf(szSizeText, L"大小：%llu 字节", fileSize);
-                        UpdateStatusBarText(1, szSizeText); // 第2列显示文件大小
                     }
                 }
                 DragFinish(hDrop);

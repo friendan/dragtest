@@ -6,6 +6,7 @@
 #include <fstream>
 #include <map>
 #include <iomanip>  // 用于设置16进制输出格式
+#include <commctrl.h>
 
 namespace AppUtil
 {
@@ -70,6 +71,84 @@ namespace AppUtil
 	    }
 	    return oss.str();
 	}
+
+	std::wstring Utf8ToUtf16(const std::string& utf8Str){
+		if (utf8Str.empty())
+	    {
+	        return L"";
+	    }
+	    // 第一步：计算需要的宽字符缓冲区大小
+	    int wideCharCount = MultiByteToWideChar(
+	        CP_UTF8,        // 源编码：UTF-8
+	        0,              // 标志：无特殊处理
+	        utf8Str.c_str(),// 源UTF-8字符串
+	        -1,             // 自动计算字符串长度（包含\0）
+	        nullptr,        // 临时缓冲区：先传NULL计算大小
+	        0               // 缓冲区大小：0表示仅计算
+	    );
+	    if (wideCharCount == 0)
+	    {
+	        return L""; // 转换失败返回空
+	    }
+	    // 第二步：分配缓冲区并执行转换
+	    std::wstring utf16Str(wideCharCount, L'\0');
+	    MultiByteToWideChar(
+	        CP_UTF8,
+	        0,
+	        utf8Str.c_str(),
+	        -1,
+	        &utf16Str[0],
+	        wideCharCount
+	    );
+	    // 移除自动添加的\0（可选，Win32 API可识别带\0的字符串）
+	    utf16Str.pop_back();
+	    return utf16Str;
+	}
+
+	std::string Utf16ToUtf8(const std::wstring& utf16Str){
+		if (utf16Str.empty())
+	    {
+	        return "";
+	    }
+	    int multiByteCount = WideCharToMultiByte(
+	        CP_UTF8,
+	        0,
+	        utf16Str.c_str(),
+	        -1,
+	        nullptr,
+	        0,
+	        nullptr,
+	        nullptr
+	    );
+	    if (multiByteCount == 0)
+	    {
+	        return "";
+	    }
+	    std::string utf8Str(multiByteCount, '\0');
+	    WideCharToMultiByte(
+	        CP_UTF8,
+	        0,
+	        utf16Str.c_str(),
+	        -1,
+	        &utf8Str[0],
+	        multiByteCount,
+	        nullptr,
+	        nullptr
+	    );
+	    utf8Str.pop_back();
+	    return utf8Str;
+	}
+
+	// 更新状态栏指定列的文本
+    void UpdateStatusBarText(HWND statusBar, int partIndex, const wchar_t* text) {
+        // SB_SETTEXT：设置指定列文本；0：绘制方式（普通）
+        SendMessageW(statusBar, SB_SETTEXT, partIndex, (LPARAM)text);
+    }
+
+    void UpdateStatusBarText(HWND statusBar, int partIndex, const std::string& text){
+        std::wstring wideText = AppUtil::Utf8ToUtf16(text);
+        SendMessageW(statusBar, SB_SETTEXT, partIndex, (LPARAM)wideText.c_str());
+    }
 	
 
 } // namespace AppUtil end
