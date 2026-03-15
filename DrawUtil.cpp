@@ -42,8 +42,8 @@ namespace DrawUtil
         int height = rcClient.bottom - rcClient.top;
         int startX = AppConst::GRID_SIZE;
         int startY = AppConst::GRID_SIZE;
-        int xMax = width  - AppConst::GRID_SIZE;
-        int yMax = height - AppConst::GRID_SIZE;
+        int xMax = width  - AppConst::GRID_SIZE - AppConst::GRID_SIZE;
+        int yMax = height - AppConst::GRID_SIZE - AppConst::GRID_SIZE;
 
         int xOffset = 0;
         for(int x = startX; x < xMax; x += AppConst::GRID_SIZE){
@@ -54,7 +54,7 @@ namespace DrawUtil
                 rect.top    = y + yOffset;
                 rect.right  = x + AppConst::GRID_SIZE + xOffset;
                 rect.bottom = y + AppConst::GRID_SIZE + yOffset;
-                if(rect.right > xMax || rect.bottom > yMax){
+                if(rect.right >= xMax || rect.bottom >= yMax){
                     break;
                 }
                 rectVector.push_back(rect);
@@ -102,7 +102,7 @@ namespace DrawUtil
             FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[1]]);
             FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[2]]);
         }
-        
+
       
         WCHAR szTitle[1024] = {0};
         wsprintf(szTitle, L"%s %d %d|%d %d"
@@ -118,6 +118,10 @@ namespace DrawUtil
         wsprintf(szPageInfo, L"%d|%d|%d", gPageCharNum, gTotalPage, gCurrentPage);
         AppUtil::UpdateStatusBarText(statusBar, 0, szPageInfo);
 
+        WCHAR szCharInfo[64] = {0};
+        wsprintf(szCharInfo, L"%d %d", hexStr.size(), hexStr.size()*3);
+        AppUtil::UpdateStatusBarText(statusBar, 1, szCharInfo);
+        
         AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
 
         ReleaseDC(hwnd, hdc);
