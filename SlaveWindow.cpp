@@ -175,7 +175,8 @@ namespace SlaveWindow
                 // DrawHexText(hwnd);
                 // DrawGrid(hwnd);
                 std::string data = "A";
-                std::string hexStr = AppUtil::StringToHexString(data);
+                // std::string hexStr = AppUtil::StringToHexString(data);
+                std::string hexStr = "0123456789ABCDEF";
                 DrawUtil::DrawDataGrid(hwnd, gStatusBar, hexStr);
                 break;
             }

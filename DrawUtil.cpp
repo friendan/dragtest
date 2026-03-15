@@ -10,6 +10,9 @@
 namespace DrawUtil
 {
     HBRUSH gBrushList[3]; // 3个画刷对应三进制的3位
+    size_t gTotalPage = 1;   // min is 1
+    size_t gCurrentPage = 1; // min is 1
+    size_t gPageCharNum = 0;
 
     void InitDraw(){
         gBrushList[0] = CreateSolidBrush(AppConst::GRID_COLOR_A);
@@ -19,6 +22,16 @@ namespace DrawUtil
 
     void UnInitDraw(){
 
+    }
+
+    void NextPage(){
+        if(gCurrentPage < gTotalPage){
+            gCurrentPage += 1;
+        }
+    }
+
+    void ReStart(){
+        gCurrentPage = 1;
     }
 
     void GetWindowGridVector(HWND hwnd, std::vector<RECT>& rectVector){
@@ -33,8 +46,8 @@ namespace DrawUtil
         int yMax = height - AppConst::GRID_SIZE;
 
         int xOffset = 0;
-        int yOffset = 0;
         for(int x = startX; x < xMax; x += AppConst::GRID_SIZE){
+            int yOffset = 0;
             for(int y = startY; y < yMax; y += AppConst::GRID_SIZE){
                 RECT rect;
                 rect.left   = x + xOffset; 
@@ -45,9 +58,9 @@ namespace DrawUtil
                     break;
                 }
                 rectVector.push_back(rect);
+                yOffset += AppConst::GRID_OFFSET_Y;
             }
             xOffset += AppConst::GRID_OFFSET_X;
-            yOffset += AppConst::GRID_OFFSET_Y;
         }
     }
 
@@ -63,18 +76,34 @@ namespace DrawUtil
         std::vector<RECT> rectVector;
         GetWindowGridVector(hwnd, rectVector);
 
-        for(char hexChar: hexStr){
-            int charInt = AppConst::CHAR_TO_DEC_MAP[hexChar];
-            int brushIndexs[3] = {
-                AppConst::BRUSH_TRIAD_TABLE[charInt][0],
-                AppConst::BRUSH_TRIAD_TABLE[charInt][1],
-                AppConst::BRUSH_TRIAD_TABLE[charInt][2]
-            };
-            
+        gPageCharNum = rectVector.size() / 3;
+        gTotalPage = hexStr.size() / gPageCharNum;
+        if(hexStr.size() % gPageCharNum != 0){
+            gTotalPage = gTotalPage + 1;
+        }
+        if(gTotalPage < 1){
+            gTotalPage = 1;
+            gCurrentPage = 1;
         }
 
+        size_t charIndex = 0;
+        size_t maxIndex = hexStr.size() - 1;
+        size_t nowPage = gCurrentPage - 1;
+        size_t rectIndex = 0;
+        for(size_t cnt = 0; cnt < gPageCharNum; cnt++){
+            charIndex = nowPage*gPageCharNum + cnt;
+            if(charIndex > maxIndex){
+                break;
+            }
+            char hexChar = hexStr[charIndex];
+            int charInt = AppConst::CHAR_TO_DEC_MAP[hexChar];
+            const int* brushIndexs = AppConst::BRUSH_TRIAD_TABLE[charInt];
+            FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[0]]);
+            FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[1]]);
+            FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[2]]);
+        }
         
-
+      
         WCHAR szTitle[1024] = {0};
         wsprintf(szTitle, L"%s %d %d|%d %d"
             , AppConst::SLAVE_APP_TITLE
@@ -84,6 +113,11 @@ namespace DrawUtil
             , rectVector.size() / 3
         );
         SetWindowTextW(hwnd, szTitle);
+
+        WCHAR szPageInfo[64] = {0};
+        wsprintf(szPageInfo, L"%d|%d|%d", gPageCharNum, gTotalPage, gCurrentPage);
+        AppUtil::UpdateStatusBarText(statusBar, 0, szPageInfo);
+
         AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
 
         ReleaseDC(hwnd, hdc);

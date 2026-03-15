@@ -8,6 +8,8 @@
 namespace AppUtil
 {
     bool ReadFileToBinary(const std::wstring& filePath, std::vector<unsigned char>& outData);
+    void NextPage();
+    void ReStart();
     
     // 读指定文件转换为16进制字符串
 	// 示例：输入 main.data → 输出 "12AB05"（无分隔符）
