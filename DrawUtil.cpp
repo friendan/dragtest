@@ -102,6 +102,7 @@ namespace DrawUtil
             FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[1]]);
             FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[2]]);
 
+            /*
             RECT& rect = rectVector[rectIndex-1];
             size_t x1 = 0;
             size_t y1 = rect.top + AppConst::GRID_SIZE;
@@ -113,6 +114,7 @@ namespace DrawUtil
             LineTo(hdc, x2, y2);
             SelectObject(hdc, hOldPen);
             DeleteObject(hPen);
+            */
         }
 
       
