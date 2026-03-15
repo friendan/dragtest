@@ -8,6 +8,7 @@
 namespace AppUtil
 {
     bool ReadFileToBinary(const std::wstring& filePath, std::vector<unsigned char>& outData);
+    std::string ReadFileHexString(const std::wstring& filePath);
     void NextPage();
     void ReStart();
     

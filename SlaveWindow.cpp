@@ -13,6 +13,7 @@ namespace SlaveWindow
     HWND gStatusBar = NULL;  // 状态栏句柄
     const int STATUS_BAR_PARTS = 3; // 状态栏列数
     int gStatusBarWidths[STATUS_BAR_PARTS]; // 存储3列宽度
+    std::string gHexString = "0123456789ABCDEF";
 
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     BOOL RegisterWindowClass(HINSTANCE hInstance);
@@ -109,26 +110,16 @@ namespace SlaveWindow
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         switch (msg) {
-            // 窗口创建时（可选，也可在StartMainWindow中创建状态栏）
             case WM_CREATE:
                 break;
-
-            // 处理文件拖拽
             case WM_DROPFILES: {
                 HDROP hDrop = (HDROP)wParam;
                 wchar_t szFilePath[MAX_PATH] = {0};
-                
-                // 只读取第一个拖拽的文件
                 if (DragQueryFile(hDrop, 0, szFilePath, MAX_PATH)) {
-                    // 可选：获取文件大小
-                    WIN32_FILE_ATTRIBUTE_DATA fileData;
-                    if (GetFileAttributesEx(szFilePath, GetFileExInfoStandard, &fileData)) {
-                        ULONGLONG fileSize = (ULONGLONG)fileData.nFileSizeHigh << 32 | fileData.nFileSizeLow;
-                        wchar_t szSizeText[50] = {0};
-                        wsprintf(szSizeText, L"大小：%llu 字节", fileSize);
-                    }
+                    gHexString = AppUtil::ReadFileHexString(szFilePath);
                 }
                 DragFinish(hDrop);
+                DrawUtil::ReStart();
                 RefreshWindow(hwnd);
                 break;
             }
@@ -174,10 +165,10 @@ namespace SlaveWindow
                 EndPaint(hwnd, &ps);
                 // DrawHexText(hwnd);
                 // DrawGrid(hwnd);
-                std::string data = "A";
+                // std::string data = "A";
                 // std::string hexStr = AppUtil::StringToHexString(data);
-                std::string hexStr = "0123456789ABCDEF";
-                DrawUtil::DrawDataGrid(hwnd, gStatusBar, hexStr);
+                // gHexString = "0123456789ABCDEF";
+                DrawUtil::DrawDataGrid(hwnd, gStatusBar, gHexString);
                 break;
             }
 

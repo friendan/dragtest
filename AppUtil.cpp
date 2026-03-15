@@ -10,6 +10,8 @@
 
 namespace AppUtil
 {
+	std::string StringToHexString(const std::string& data);
+	
 	bool ReadFileToBinary(const std::wstring& filePath, std::vector<unsigned char>& outData) {
 	    outData.clear();
 	    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
@@ -19,10 +21,24 @@ namespace AppUtil
 	    outData.resize(size);
 	    if (!file.read((char*)outData.data(), size)) {
 	        outData.clear();
+	        file.close();
 	        return false;
 	    }
+	    file.close();
 	    return true;
 	}
+
+	 std::string ReadFileHexString(const std::wstring& filePath){
+	    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+	    if (!file.is_open()) return "";
+	    std::streamsize size = file.tellg();
+	    file.seekg(0, std::ios::beg);
+	    std::string data;
+	    data.resize(size);
+	   	file.read((char*)data.data(), size);
+	   	file.close();
+	    return StringToHexString(data);
+	 }
 
 	std::string BinaryToHexString(const std::vector<unsigned char>& binVector){
 	    std::ostringstream oss;
