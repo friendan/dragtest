@@ -7,9 +7,9 @@
 
 namespace AppConst
 {
-    constexpr int GRID_SIZE = 16;
-    constexpr int GRID_OFFSET_X = 10;
-    constexpr int GRID_OFFSET_Y = 10;
+    constexpr int GRID_SIZE = 8;
+    constexpr int GRID_OFFSET_X = 2;
+    constexpr int GRID_OFFSET_Y = 2;
     constexpr COLORREF GRID_COLOR_A = RGB(255, 255, 255);
     constexpr COLORREF GRID_COLOR_B = RGB(255, 255, 0);
     constexpr COLORREF GRID_COLOR_C = RGB(0, 255, 255);

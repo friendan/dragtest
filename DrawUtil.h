@@ -9,6 +9,7 @@ namespace DrawUtil
 {   
     void InitDraw();
     void UnInitDraw();
+    void NextPage();
     void ReStart();
 
     //参数：hexStr 必须是16进制字符串

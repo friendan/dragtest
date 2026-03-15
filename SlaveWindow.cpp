@@ -125,7 +125,8 @@ namespace SlaveWindow
             }
 
             case WM_KEYDOWN: {
-                if (wParam == VK_F2) { // F2
+                if (wParam == VK_SPACE) { // VK_SPACE VK_RETURN VK_ESCAPE VK_F2 VK_TAB
+                    DrawUtil::NextPage();
                     RefreshWindow(hwnd);
                 }
                 break;

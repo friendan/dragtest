@@ -42,8 +42,8 @@ namespace DrawUtil
         int height = rcClient.bottom - rcClient.top;
         int startX = AppConst::GRID_SIZE;
         int startY = AppConst::GRID_SIZE;
-        int xMax = width  - AppConst::GRID_SIZE - AppConst::GRID_SIZE;
-        int yMax = height - AppConst::GRID_SIZE - AppConst::GRID_SIZE;
+        int xMax = width  - AppConst::GRID_SIZE*3;
+        int yMax = height - AppConst::GRID_SIZE*3;
 
         int xOffset = 0;
         for(int x = startX; x < xMax; x += AppConst::GRID_SIZE){
@@ -136,8 +136,7 @@ namespace DrawUtil
         wsprintf(szCharInfo, L"%d %d", hexStr.size(), hexStr.size()*3);
         AppUtil::UpdateStatusBarText(statusBar, 1, szCharInfo);
 
-        AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
-
+        // AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
         ReleaseDC(hwnd, hdc);
     }
 
