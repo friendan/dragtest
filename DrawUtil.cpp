@@ -101,6 +101,18 @@ namespace DrawUtil
             FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[0]]);
             FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[1]]);
             FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[2]]);
+
+            RECT& rect = rectVector[rectIndex-1];
+            size_t x1 = 0;
+            size_t y1 = rect.top + AppConst::GRID_SIZE;
+            size_t x2 = width;
+            size_t y2 = y1;
+            HPEN hPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0)); // PS_SOLID=实线，1=宽度，RGB=颜色
+            HPEN hOldPen = (HPEN)SelectObject(hdc, hPen); // 将自定义画笔选入DC，保存旧画笔
+            MoveToEx(hdc, x1, y1, NULL); 
+            LineTo(hdc, x2, y2);
+            SelectObject(hdc, hOldPen);
+            DeleteObject(hPen);
         }
 
       
@@ -121,7 +133,7 @@ namespace DrawUtil
         WCHAR szCharInfo[64] = {0};
         wsprintf(szCharInfo, L"%d %d", hexStr.size(), hexStr.size()*3);
         AppUtil::UpdateStatusBarText(statusBar, 1, szCharInfo);
-        
+
         AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
 
         ReleaseDC(hwnd, hdc);
