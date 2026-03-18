@@ -129,6 +129,22 @@ namespace SlaveWindow
                     DrawUtil::NextPage();
                     RefreshWindow(hwnd);
                 }
+                else if(wParam == VK_OEM_MINUS || wParam == VK_SUBTRACT){
+                    // VK_OEM_MINUS 主键盘减号
+                    // VK_SUBTRACT  小键盘减号
+                    DrawUtil::DecGridSize(1);
+                    RefreshWindow(hwnd);
+                }
+                else if(wParam == VK_ADD){
+                    // 小键盘加号
+                    DrawUtil::AddGridSize(1);
+                    RefreshWindow(hwnd);
+                }
+                else if(wParam == VK_OEM_PLUS){ // && (GetKeyState(VK_SHIFT) & 0x8000)
+                    // 主键盘加号（等号键）
+                    DrawUtil::AddGridSize(1);
+                    RefreshWindow(hwnd);
+                }
                 break;
             }
 
