@@ -174,7 +174,9 @@ namespace DrawUtil
         wsprintf(szCharInfo, L"%d %d", hexStr.size(), hexStr.size()*3);
         AppUtil::UpdateStatusBarText(statusBar, 1, szCharInfo);
 
-        // AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
+        if(hexStr.size() < 128){
+            AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
+        }
         ReleaseDC(hwnd, hdc);
     }
     

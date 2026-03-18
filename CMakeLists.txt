@@ -48,7 +48,7 @@ set(SlaveAppSrcList
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SlaveAppSrcList})
 add_executable(GridMap WIN32 ${SlaveAppSrcList})
-target_link_libraries(GridMap PRIVATE shell32.lib comctl32.lib)
+target_link_libraries(GridMap PRIVATE shell32.lib comctl32.lib shlwapi.lib)
 
 
 

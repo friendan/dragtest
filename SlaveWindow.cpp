@@ -4,6 +4,8 @@
 #include "DrawUtil.h"
 #include "AppUtil.h"
 #include <commctrl.h>
+#include <shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
 
 namespace SlaveWindow
 {
@@ -14,6 +16,7 @@ namespace SlaveWindow
     const int STATUS_BAR_PARTS = 3; // 状态栏列数
     int gStatusBarWidths[STATUS_BAR_PARTS]; // 存储3列宽度
     std::string gHexString = "0123456789ABCDEF";
+    std::string gFileName = "test.data";
 
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     BOOL RegisterWindowClass(HINSTANCE hInstance);
@@ -117,6 +120,8 @@ namespace SlaveWindow
                 wchar_t szFilePath[MAX_PATH] = {0};
                 if (DragQueryFile(hDrop, 0, szFilePath, MAX_PATH)) {
                     gHexString = AppUtil::ReadFileHexString(szFilePath);
+                    const wchar_t* szFileName = PathFindFileNameW(szFilePath);
+                    gFileName = AppUtil::StringToHexString(AppUtil::Utf16ToUtf8(szFileName));
                 }
                 DragFinish(hDrop);
                 DrawUtil::ReStart();
