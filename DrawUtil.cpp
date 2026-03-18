@@ -14,6 +14,7 @@ namespace DrawUtil
     size_t gCurrentPage = 1; // min is 1
     size_t gPageCharNum = 0;
     size_t gGridSizeAdd = 0;
+    HWND gDrawWindow = NULL;
 
     void InitDraw(){
         gBrushList[0] = CreateSolidBrush(AppConst::GRID_COLOR_A);
@@ -37,12 +38,23 @@ namespace DrawUtil
 
     void AddGridSize(int addVal){
         gGridSizeAdd += addVal;
+        if(gDrawWindow != NULL){
+            RECT rcClient;
+            GetClientRect(gDrawWindow, &rcClient);
+            int width  = (rcClient.right - rcClient.left) / 5;
+            int height = (rcClient.bottom - rcClient.top) / 5;
+            if(gGridSizeAdd > width || gGridSizeAdd > height){
+                gGridSizeAdd = width;
+            }
+        }
     }
 
     void DecGridSize(int decVal){
-        gGridSizeAdd -= decVal;
-        if(gGridSizeAdd < 0){
+        // gGridSizeAdd -= decVal; // 不能这样 size_t是无符号整数 0-=1会溢出，导致程序异常
+        if(decVal > gGridSizeAdd){
             gGridSizeAdd = 0;
+        }else{
+            gGridSizeAdd -= decVal;
         }
     }
 
@@ -51,6 +63,7 @@ namespace DrawUtil
     }
 
     void GetWindowGridVector(HWND hwnd, std::vector<RECT>& rectVector){
+        gDrawWindow = hwnd;
         RECT rcClient;
         GetClientRect(hwnd, &rcClient);
 
