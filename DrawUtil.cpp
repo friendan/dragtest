@@ -34,6 +34,7 @@ namespace DrawUtil
 
     void ReStart(){
         gCurrentPage = 1;
+        gGridSizeAdd = 0;
     }
 
     void AddGridSize(int addVal){
@@ -105,8 +106,14 @@ namespace DrawUtil
 
         std::vector<RECT> rectVector;
         GetWindowGridVector(hwnd, rectVector);
+        if(rectVector.size() < 3){
+            return; // 三进制 至少要3个格子才行
+        }
 
         gPageCharNum = rectVector.size() / 3;
+        if(gPageCharNum < 1){
+            gPageCharNum = 1; // 不能是0 不然后面除法 程序崩溃
+        }
         gTotalPage = hexStr.size() / gPageCharNum;
         if(hexStr.size() % gPageCharNum != 0){
             gTotalPage = gTotalPage + 1;
