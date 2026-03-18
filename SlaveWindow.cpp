@@ -5,18 +5,21 @@
 #include "AppUtil.h"
 #include <commctrl.h>
 #include <shlwapi.h>
-#pragma comment(lib, "shlwapi.lib")
+#include <thread>
+#include <mutex>
 
 namespace SlaveWindow
 {
     const wchar_t* g_szClassName = L"HexViewWindowClass";
     const int WM_DISPLAY_HEX_DATA = WM_USER + 1;
+    const int WM_LOAD_FILE_COMPLETE = WM_USER + 2;
     HWND gMainWindow = NULL;
     HWND gStatusBar = NULL;  // 状态栏句柄
     const int STATUS_BAR_PARTS = 3; // 状态栏列数
     int gStatusBarWidths[STATUS_BAR_PARTS]; // 存储3列宽度
     std::string gHexString = "0123456789ABCDEF";
     std::string gFileName;
+    std::mutex gDataMutex;
 
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     BOOL RegisterWindowClass(HINSTANCE hInstance);
@@ -31,6 +34,14 @@ namespace SlaveWindow
         wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
         wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
         return RegisterClassEx(&wc) != 0;
+    }
+
+    void LoadFileInBackground(const std::string& filePathUtf8, const std::string& fileNameUtf8) {
+        std::string hexData = AppUtil::FileToHexString(filePathUtf8);
+        std::lock_guard<std::mutex> lock(gDataMutex);
+        gHexString = hexData;
+        gFileName = AppUtil::StringToHexString(fileNameUtf8);
+        PostMessage(gMainWindow, WM_LOAD_FILE_COMPLETE, 0, 0);
     }
 
     void StartMainWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
@@ -120,16 +131,22 @@ namespace SlaveWindow
                 HDROP hDrop = (HDROP)wParam;
                 wchar_t szFilePath[MAX_PATH] = {0};
                 if (DragQueryFile(hDrop, 0, szFilePath, MAX_PATH)) {
-                    gHexString = AppUtil::ReadFileHexString(szFilePath);
                     const wchar_t* szFileName = PathFindFileNameW(szFilePath);
-                    gFileName = AppUtil::StringToHexString(AppUtil::Utf16ToUtf8(szFileName));
+                    std::string filePathUtf8 = AppUtil::Utf16ToUtf8(szFilePath);
+                    std::string fileNameUtf8 = AppUtil::Utf16ToUtf8(szFileName);
+                    std::thread fileThread(LoadFileInBackground, filePathUtf8, fileNameUtf8);
+                    fileThread.detach(); 
+                    SendMessageW(gStatusBar, SB_SETTEXT, 2, (LPARAM)L"ready...");
                 }
                 DragFinish(hDrop);
+                break;
+            }
+            case WM_LOAD_FILE_COMPLETE: {
+                std::lock_guard<std::mutex> lock(gDataMutex);
                 DrawUtil::ReStart();
                 RefreshWindow(hwnd);
                 break;
             }
-
             case WM_KEYDOWN: {
                 if (wParam == VK_SPACE) { // VK_SPACE VK_RETURN VK_ESCAPE VK_F2 VK_TAB
                     DrawUtil::NextPage();
