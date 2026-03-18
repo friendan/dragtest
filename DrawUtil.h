@@ -14,6 +14,7 @@ namespace DrawUtil
     void AddGridSize(int addVal);
     void DecGridSize(int decVal);
     size_t GetGridSize();
+    size_t GetNowPage();
 
     //参数：hexStr 必须是16进制字符串
     void DrawDataGrid(HWND hwnd, HWND statusBar, const std::string& hexStr);

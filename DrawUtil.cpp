@@ -63,6 +63,10 @@ namespace DrawUtil
         return AppConst::GRID_SIZE + gGridSizeAdd;
     }
 
+    size_t GetNowPage(){
+        return gCurrentPage;
+    }
+
     void GetWindowGridVector(HWND hwnd, std::vector<RECT>& rectVector){
         gDrawWindow = hwnd;
         RECT rcClient;

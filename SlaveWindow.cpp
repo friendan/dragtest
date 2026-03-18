@@ -190,7 +190,11 @@ namespace SlaveWindow
                 // std::string data = "A";
                 // std::string hexStr = AppUtil::StringToHexString(data);
                 // gHexString = "0123456789ABCDEF";
-                DrawUtil::DrawDataGrid(hwnd, gStatusBar, gHexString);
+                if(DrawUtil::GetNowPage() <= 1){
+                    DrawUtil::DrawDataGrid(hwnd, gStatusBar, gFileName);
+                }else{
+                    DrawUtil::DrawDataGrid(hwnd, gStatusBar, gHexString);
+                }
                 break;
             }
 
