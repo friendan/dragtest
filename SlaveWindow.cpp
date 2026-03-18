@@ -16,7 +16,7 @@ namespace SlaveWindow
     const int STATUS_BAR_PARTS = 3; // 状态栏列数
     int gStatusBarWidths[STATUS_BAR_PARTS]; // 存储3列宽度
     std::string gHexString = "0123456789ABCDEF";
-    std::string gFileName = "test.data";
+    std::string gFileName;
 
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     BOOL RegisterWindowClass(HINSTANCE hInstance);
@@ -38,6 +38,7 @@ namespace SlaveWindow
             MessageBox(NULL, L"窗口类注册失败！", L"错误", MB_ICONEXCLAMATION | MB_OK);
             return;
         }
+        gFileName = AppUtil::StringToHexString("test.data");
 
         gMainWindow = CreateWindowEx(
             WS_EX_CLIENTEDGE,
