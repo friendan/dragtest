@@ -20,9 +20,10 @@ namespace DrawUtil
     void DrawDataGrid(HWND hwnd, HWND statusBar, const std::string& fileNameHexStr, const std::string& hexStr);
 
     void GetWindowGridVector(HWND hwnd, std::vector<RECT>& rectVector);
-
-
-
+    void DrawFileNameGrid(HWND hwnd, const std::string& fileNameHexStr);
+    void DrawHexStringGrid(HWND hwnd, const std::string& hexStr);
+    void ShowDrawDataInfo(HWND hwnd, HWND statusBar, const std::string& hexStr);
+    void DrawBackground(HWND hwnd);
 
 
 

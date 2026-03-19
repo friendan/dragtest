@@ -10,8 +10,8 @@
 namespace DrawUtil
 {
     HBRUSH gBrushList[3]; // 3个画刷对应三进制的3位
-    size_t gTotalPage = 1;   // min is 1
-    size_t gCurrentPage = 1; // min is 1
+    size_t gTotalPage = 0;
+    size_t gCurrentPage = 0;
     size_t gPageCharNum = 0;
     size_t gGridSizeAdd = 0;
     HWND gDrawWindow = NULL;
@@ -30,20 +30,24 @@ namespace DrawUtil
         if(gCurrentPage < gTotalPage){
             gCurrentPage += 1;
         }
+        else if(gCurrentPage == 0){
+            gCurrentPage = 1;
+        }
     }
 
     void ReStart(){
-        gCurrentPage = 1;
+        gCurrentPage = 0;
+        gTotalPage = 0;
         gGridSizeAdd = 0;
     }
-
+    
     void AddGridSize(int addVal){
         gGridSizeAdd += addVal;
         if(gDrawWindow != NULL){
             RECT rcClient;
             GetClientRect(gDrawWindow, &rcClient);
-            int width  = (rcClient.right - rcClient.left) / 5;
-            int height = (rcClient.bottom - rcClient.top) / 5;
+            int width  = (rcClient.right - rcClient.left) / 10;
+            int height = (rcClient.bottom - rcClient.top) / 10;
             if(gGridSizeAdd > width || gGridSizeAdd > height){
                 gGridSizeAdd = width;
             }
@@ -99,15 +103,28 @@ namespace DrawUtil
         }
     }
 
-    void DrawDataGrid(HWND hwnd, HWND statusBar, const std::string& fileNameHexStr, const std::string& hexStr)
-    {
+    void DrawFileNameGrid(HWND hwnd, const std::string& fileNameHexStr){
+        if(fileNameHexStr.size() < 1){
+            return;
+        }
+        std::vector<RECT> rectVector;
+        GetWindowGridVector(hwnd, rectVector);
+        if(rectVector.size() < fileNameHexStr.size()*3){
+            return; // 当前窗口格子数太少了，无法绘制文件名
+        }
         HDC hdc = GetDC(hwnd);
-        RECT rcClient;
-        GetClientRect(hwnd, &rcClient);
-        FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
-        int width  = rcClient.right - rcClient.left;
-        int height = rcClient.bottom - rcClient.top;
+        size_t rectIndex = 0;
+        for(char hexChar: fileNameHexStr){
+            int charInt = AppConst::CHAR_TO_DEC_MAP[hexChar];
+            const int* brushIndexs = AppConst::BRUSH_TRIAD_TABLE[charInt];
+            FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[0]]);
+            FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[1]]);
+            FillRect(hdc, &rectVector[rectIndex++], gBrushList[brushIndexs[2]]);
+        }
+        ReleaseDC(hwnd, hdc);
+    }
 
+    void DrawHexStringGrid(HWND hwnd, const std::string& hexStr){
         std::vector<RECT> rectVector;
         GetWindowGridVector(hwnd, rectVector);
         if(rectVector.size() < 3){
@@ -127,6 +144,7 @@ namespace DrawUtil
             gCurrentPage = 1;
         }
 
+        HDC hdc = GetDC(hwnd);
         size_t gridSize = GetGridSize();
         size_t charIndex = 0;
         size_t maxIndex = hexStr.size() - 1;
@@ -158,8 +176,17 @@ namespace DrawUtil
             DeleteObject(hPen);
             */
         }
+        ReleaseDC(hwnd, hdc);
+    }
 
-      
+    void ShowDrawDataInfo(HWND hwnd, HWND statusBar, const std::string& hexStr){
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        int width  = rcClient.right - rcClient.left;
+        int height = rcClient.bottom - rcClient.top;
+        std::vector<RECT> rectVector;
+        GetWindowGridVector(hwnd, rectVector);
+
         WCHAR szTitle[1024] = {0};
         wsprintf(szTitle, L"%s %d %d|%d %d"
             , AppConst::SLAVE_APP_TITLE
@@ -181,7 +208,26 @@ namespace DrawUtil
         if(hexStr.size() < 128){
             AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
         }
+    }
+
+    void DrawBackground(HWND hwnd){
+        HDC hdc = GetDC(hwnd);
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
         ReleaseDC(hwnd, hdc);
+    }
+
+    void DrawDataGrid(HWND hwnd, HWND statusBar, const std::string& fileNameHexStr, const std::string& hexStr)
+    {
+        DrawBackground(hwnd);
+        if(gCurrentPage <= 0){
+            DrawFileNameGrid(hwnd, fileNameHexStr);
+            ShowDrawDataInfo(hwnd, statusBar, fileNameHexStr);
+        }else{
+            DrawHexStringGrid(hwnd, hexStr);
+            ShowDrawDataInfo(hwnd, statusBar, hexStr);
+        }
     }
     
 
