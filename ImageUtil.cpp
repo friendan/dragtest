@@ -5,9 +5,9 @@
 #include <sstream>
 #include <fstream>
 #include <map>
-#include "PngUtil.h"
+#include "ImageUtil.h"
 
-namespace PngUtil
+namespace ImageUtil
 {
 	static ULONG_PTR g_gdiplusToken = 0;
 	static UINT g_imageWidth = 0;
@@ -101,5 +101,5 @@ namespace PngUtil
 
 
 
-} // namespace PngUtil end
+} // namespace ImageUtil end
 
