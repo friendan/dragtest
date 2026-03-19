@@ -29,6 +29,12 @@ namespace AppUtil
     void UpdateStatusBarText(HWND statusBar, int partIndex, const wchar_t* text); // 更新状态栏某列文本
     void UpdateStatusBarText(HWND statusBar, int partIndex, const std::string& text);
 
+    std::string GetTimeStr();
+    void SaveLog(const std::string& msg);
+    void SaveLog(const std::wstring& msg);
+    template <typename T>
+    void SaveLog(const T& value);
+
 
 } // namespace AppUtil end
 

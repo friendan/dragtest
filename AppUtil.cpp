@@ -7,9 +7,12 @@
 #include <map>
 #include <iomanip>  // 用于设置16进制输出格式
 #include <commctrl.h>
+#include <mutex>
+#include <ctime>
 
 namespace AppUtil
 {
+	static std::mutex g_log_mutex;
 	std::string StringToHexString(const std::string& data);
 	
 	bool ReadFileToBinary(const std::wstring& filePath, std::vector<unsigned char>& outData) {
@@ -165,6 +168,41 @@ namespace AppUtil
         std::wstring wideText = AppUtil::Utf8ToUtf16(text);
         SendMessageW(statusBar, SB_SETTEXT, partIndex, (LPARAM)wideText.c_str());
     }
+
+    std::string GetTimeStr(){
+    	time_t now = time(nullptr);
+	    tm t{};
+	    localtime_s(&t, &now); // Windows下安全的本地时间函数
+	    char buf[32] = {0};
+	    sprintf_s(buf, "[%04d-%02d-%02d %02d:%02d:%02d]", 
+	             t.tm_year + 1900, t.tm_mon + 1, t.tm_mday,
+	             t.tm_hour, t.tm_min, t.tm_sec);
+	    return buf;
+    }
+
+    void write_log(const std::string& msg) {
+	    std::lock_guard<std::mutex> lock(g_log_mutex); // 自动加锁/解锁
+	    std::ofstream log_file("app.log", std::ios::app | std::ios::out);
+	    if (log_file.is_open()) {
+	        log_file << GetTimeStr() << " " << msg << std::endl;
+	        log_file.close();
+	    }
+	}
+
+	void SaveLog(const std::string& msg){
+		write_log(msg);
+	}
+
+	void SaveLog(const std::wstring& msg){
+		write_log(Utf16ToUtf8(msg));
+	}
+
+	template <typename T>
+	void SaveLog(const T& value) {
+	    std::stringstream ss;
+	    ss << value;
+	    write_log(ss.str());
+	}
 	
 
 } // namespace AppUtil end
