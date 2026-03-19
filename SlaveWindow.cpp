@@ -18,7 +18,8 @@ namespace SlaveWindow
     const int STATUS_BAR_PARTS = 3; // 状态栏列数
     int gStatusBarWidths[STATUS_BAR_PARTS]; // 存储3列宽度
     std::string gHexString = "0123456789ABCDEF";
-    std::string gFileName;
+    std::string gFileName = "test.data";
+    std::string gFileNameHexStr;
     std::mutex gDataMutex;
 
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -40,7 +41,8 @@ namespace SlaveWindow
         std::string hexData = AppUtil::FileToHexString(filePathUtf8);
         std::lock_guard<std::mutex> lock(gDataMutex);
         gHexString = hexData;
-        gFileName = AppUtil::StringToHexString(fileNameUtf8);
+        gFileName = fileNameUtf8;
+        gFileNameHexStr = AppUtil::StringToHexString(gFileName);
         PostMessage(gMainWindow, WM_LOAD_FILE_COMPLETE, 0, 0);
     }
 
@@ -49,7 +51,7 @@ namespace SlaveWindow
             MessageBox(NULL, L"窗口类注册失败！", L"错误", MB_ICONEXCLAMATION | MB_OK);
             return;
         }
-        gFileName = AppUtil::StringToHexString("test.data");
+        gFileNameHexStr = AppUtil::StringToHexString(gFileName);
 
         gMainWindow = CreateWindowEx(
             WS_EX_CLIENTEDGE,
@@ -208,11 +210,7 @@ namespace SlaveWindow
                 // std::string data = "A";
                 // std::string hexStr = AppUtil::StringToHexString(data);
                 // gHexString = "0123456789ABCDEF";
-                if(DrawUtil::GetNowPage() <= 1){
-                    DrawUtil::DrawDataGrid(hwnd, gStatusBar, gFileName);
-                }else{
-                    DrawUtil::DrawDataGrid(hwnd, gStatusBar, gHexString);
-                }
+                DrawUtil::DrawDataGrid(hwnd, gStatusBar, gFileNameHexStr, gHexString);
                 break;
             }
 

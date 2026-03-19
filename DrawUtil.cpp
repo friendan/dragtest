@@ -99,7 +99,7 @@ namespace DrawUtil
         }
     }
 
-    void DrawDataGrid(HWND hwnd, HWND statusBar, const std::string& hexStr)
+    void DrawDataGrid(HWND hwnd, HWND statusBar, const std::string& fileNameHexStr, const std::string& hexStr)
     {
         HDC hdc = GetDC(hwnd);
         RECT rcClient;
