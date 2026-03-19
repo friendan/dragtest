@@ -26,6 +26,8 @@ set(MainAppSrcList
 	DrawUtil.cpp
 	AppUtil.h
 	AppUtil.cpp
+	PngUtil.h
+	PngUtil.cpp
 	main.cpp
 )
 
