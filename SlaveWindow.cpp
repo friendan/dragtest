@@ -170,9 +170,13 @@ namespace SlaveWindow
                     DrawUtil::AddGridSize(1);
                     RefreshWindow(hwnd);
                 }
+                else if(wParam == VK_ESCAPE){
+                    DrawUtil::ReStart();
+                    RefreshWindow(hwnd);
+                }
                 break;
             }
-
+            
             // 窗口大小变化时，调整状态栏宽度和列宽
             case WM_SIZE: {
                 if (gStatusBar == NULL) break;
