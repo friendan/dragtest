@@ -40,7 +40,7 @@ namespace DrawUtil
         gTotalPage = 0;
         gGridSizeAdd = 0;
     }
-    
+
     void AddGridSize(int addVal){
         gGridSizeAdd += addVal;
         if(gDrawWindow != NULL){
@@ -188,17 +188,17 @@ namespace DrawUtil
         GetWindowGridVector(hwnd, rectVector);
 
         WCHAR szTitle[1024] = {0};
-        wsprintf(szTitle, L"%s %d %d|%d %d"
+        wsprintf(szTitle, L"%s %dx%d|%d %d"
             , AppConst::SLAVE_APP_TITLE
             , width
             , height
             , rectVector.size()
-            , rectVector.size() / 3
+            , gPageCharNum
         );
         SetWindowTextW(hwnd, szTitle);
-
+        
         WCHAR szPageInfo[64] = {0};
-        wsprintf(szPageInfo, L"%d|%d|%d", gPageCharNum, gTotalPage, gCurrentPage);
+        wsprintf(szPageInfo, L"%d|%d", gTotalPage, gCurrentPage);
         AppUtil::UpdateStatusBarText(statusBar, 0, szPageInfo);
 
         WCHAR szCharInfo[64] = {0};
