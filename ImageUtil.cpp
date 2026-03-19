@@ -67,7 +67,7 @@ namespace ImageUtil
         Gdiplus::Status status = bitmap.LockBits(
             &rect,
             Gdiplus::ImageLockModeRead,
-            Gdiplus::PixelFormat32bppARGB,
+            PixelFormat32bppARGB,
             &bitmapData
         );
 
