@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "MainWindow.h"
 #include "AppConstants.h"
+#include "ImageUtil.h"
 #include "DrawUtil.h"
 #include <commctrl.h>
 
@@ -48,6 +49,8 @@ namespace MainWindow
             return;
         }
 
+        ImageUtil::InitGdiplus();
+
         // 创建状态栏（窗口创建后立即创建）
         CreateStatusBar(gMainWindow);
         DragAcceptFiles(gMainWindow, TRUE); // 启用拖拽
@@ -64,6 +67,7 @@ namespace MainWindow
         }
         
         DrawUtil::UnInitDraw();
+        ImageUtil::ShutdownGdiplus();
     }
 
     // 创建3列状态栏
