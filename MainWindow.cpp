@@ -165,12 +165,7 @@ namespace MainWindow
                         SendMessage(gStatusBar, SB_SETTEXT, 0, (LPARAM)L"working...");
                         SendMessage(gStatusBar, SB_SETTEXT, 1, (LPARAM)L"waiting");
                         RefreshWindow(hwnd);
-
-                        // 先等待之前的线程结束（如果存在）
-                        if (gWorkerThread && gWorkerThread->joinable()) {
-                            gWorkerThread->join();
-                        }
-
+                        
                         // C++11 创建线程：用智能指针管理，自动释放
                         gWorkerThread = std::make_unique<std::thread>(
                             &MainWindow::ProcessFolder, // 线程函数
@@ -190,7 +185,9 @@ namespace MainWindow
 
             // 处理线程完成后的UI更新（主线程执行）
             case WM_UPDATE_IMAGE_LIST: {
-                std::wstring folderPath = (wchar_t*)lParam;
+                // 接收堆分配的指针
+                std::unique_ptr<std::wstring> pFolderPath(reinterpret_cast<std::wstring*>(lParam));
+                if (!pFolderPath) break; 
                 
                 // 更新状态栏
                 if (gStatusBar) {
@@ -202,7 +199,7 @@ namespace MainWindow
                     SendMessage(gStatusBar, SB_SETTEXT, 0, (LPARAM)countText);
 
                     SendMessage(gStatusBar, SB_SETTEXT, 1, (LPARAM)L"finish");
-                    SendMessage(gStatusBar, SB_SETTEXT, 2, (LPARAM)folderPath.c_str());
+                    SendMessage(gStatusBar, SB_SETTEXT, 2, (LPARAM)pFolderPath->c_str());
                 }
 
                 // 刷新窗口
@@ -323,11 +320,21 @@ namespace MainWindow
         std::sort(tempImageFiles.begin(), tempImageFiles.end(), CompareImageFileByCreateTime);
 
         // 线程安全：更新全局列表（加互斥锁）
-        std::lock_guard<std::mutex> lock(gImageFilesMutex); // RAII自动解锁
-        gImageFiles = tempImageFiles;
+        {
+            std::lock_guard<std::mutex> lock(gImageFilesMutex); // RAII自动解锁
+            gImageFiles = tempImageFiles;
+        }
+       
+        // 【修复】在堆上复制字符串，避免局部变量销毁导致指针失效
+        // 使用 new wchar_t[] 或者 std::wstring*
+        std::wstring* pPath = new std::wstring(folderPath);
 
-        // 发送自定义消息给主线程，通知更新UI
-        SendMessage(hwnd, WM_UPDATE_IMAGE_LIST, 0, (LPARAM)folderPath.c_str());
+        // 【修复】使用 PostMessage 代替 SendMessage
+        // PostMessage 立即返回，不会阻塞子线程，防止死锁
+        if (!PostMessage(hwnd, WM_UPDATE_IMAGE_LIST, 0, (LPARAM)pPath)) {
+            // 如果投递失败（例如窗口已销毁），清理内存
+            delete pPath;
+        }
 
         // 重置处理状态（原子操作，线程安全）
         gIsProcessing = false;
