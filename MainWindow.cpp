@@ -41,6 +41,7 @@ namespace MainWindow
     bool IsImageFile(const std::wstring& filePath);
     bool CompareImageFileByCreateTime(const ImageFileInfo& a, const ImageFileInfo& b);
     void ProcessFolder(const std::wstring& folderPath, HWND hwnd);
+    void ExtractImageData(const std::wstring& folderPath);
     
     BOOL RegisterWindowClass(HINSTANCE hInstance) {
         WNDCLASSEX wc = {0};
@@ -165,7 +166,7 @@ namespace MainWindow
                         SendMessage(gStatusBar, SB_SETTEXT, 0, (LPARAM)L"working...");
                         SendMessage(gStatusBar, SB_SETTEXT, 1, (LPARAM)L"waiting");
                         RefreshWindow(hwnd);
-                        
+
                         // C++11 创建线程：用智能指针管理，自动释放
                         gWorkerThread = std::make_unique<std::thread>(
                             &MainWindow::ProcessFolder, // 线程函数
@@ -336,9 +337,20 @@ namespace MainWindow
             delete pPath;
         }
 
+        AppUtil::SaveLog("gImageFiles.size() ", gImageFiles.size());
+        ExtractImageData(folderPath);
+        
         // 重置处理状态（原子操作，线程安全）
         gIsProcessing = false;
         AppUtil::SaveLog("ProcessFolder finish");
+    }
+
+    void ExtractImageData(const std::wstring& folderPath){
+        if(gImageFiles.size() < 1) return;
+        for(auto& fileInfo : MainWindow::gImageFiles){
+            AppUtil::SaveLog(fileInfo.filePath);
+        }
+
     }
 
 
