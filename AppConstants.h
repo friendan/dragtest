@@ -13,6 +13,7 @@ namespace AppConst
     constexpr COLORREF GRID_COLOR_A = RGB(255, 255, 255);
     constexpr COLORREF GRID_COLOR_B = RGB(255, 255, 0);
     constexpr COLORREF GRID_COLOR_C = RGB(0, 255, 255);
+    constexpr COLORREF COLOR_BLACK  = RGB(0, 0, 0);
     constexpr const wchar_t* SLAVE_APP_TITLE = L"GridMap";
     //std::string utf8_str = u8"中文测试😀"; // C++11+支持u8前缀标识UTF-8字面量
     

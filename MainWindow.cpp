@@ -42,6 +42,7 @@ namespace MainWindow
     bool CompareImageFileByCreateTime(const ImageFileInfo& a, const ImageFileInfo& b);
     void ProcessFolder(const std::wstring& folderPath, HWND hwnd);
     void ExtractImageData(const std::wstring& folderPath);
+    std::string getHexStrFromPixelList(const std::vector<std::vector<ImageUtil::PixelInfo>>& pixelList);
     
     BOOL RegisterWindowClass(HINSTANCE hInstance) {
         WNDCLASSEX wc = {0};
@@ -83,6 +84,10 @@ namespace MainWindow
 
         ShowWindow(gMainWindow, nCmdShow);
         UpdateWindow(gMainWindow);
+        
+        std::string testImgPath = ".\\test\\0.png";
+        std::vector<std::vector<ImageUtil::PixelInfo>> pixelList = ImageUtil::TraverseImagePixels(testImgPath);
+        getHexStrFromPixelList(pixelList);
 
         // 消息循环
         MSG msg = {0};
@@ -356,12 +361,34 @@ namespace MainWindow
             AppUtil::SaveLog("pixelList.size() ", pixelList.size());
             if(parseFileName){
                 parseFileName = false;
-
+                dstFileName = getHexStrFromPixelList(pixelList);
             }else{
+                std::string hexStr = getHexStrFromPixelList(pixelList);
                 
             }
         }
 
+    }
+
+    std::string getHexStrFromPixelList(const std::vector<std::vector<ImageUtil::PixelInfo>>& pixelList){
+        std::string hexStr;
+        size_t rowSize = pixelList.size();
+        if(rowSize < 10) return hexStr;
+
+        size_t maxCol = GetMaxColumnCount(pixelList);
+        for (size_t col = 0; col < maxCol; ++col) {
+            for (size_t row = 0; row < pixelList.size(); ++row) {
+                const auto& rowPixels = pixelList[row];
+                if (col >= rowPixels.size()) {
+                    continue;
+                }
+                const ImageUtil::PixelInfo& pixel = rowPixels[col];
+                
+            }
+        }
+
+
+        return hexStr;
     }
 
 

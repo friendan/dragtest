@@ -13,6 +13,7 @@ namespace ImageUtil
         BYTE green;     // 绿色分量 (0-255)
         BYTE blue;      // 蓝色分量 (0-255)
         BYTE alpha;     // 透明通道 (0-255)
+        COLORREF color; 
     };
 
     bool InitGdiplus();
@@ -24,6 +25,9 @@ namespace ImageUtil
      * @return std::vector<std::vector<PixelInfo>> 二维像素数据：[行][列]，失败返回空
      */
     std::vector<std::vector<PixelInfo>> TraverseImagePixels(const std::string& imagePath);
+
+    // 计算二维vector的最大列数（所有行中最长的列数）
+    size_t GetMaxColumnCount(const std::vector<std::vector<ImageUtil::PixelInfo>>& pixelList);
 
 
 } // namespace ImageUtil end

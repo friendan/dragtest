@@ -88,15 +88,27 @@ namespace ImageUtil
                 BYTE green = pRow[x * 4 + 1];
                 BYTE red = pRow[x * 4 + 2];
                 BYTE alpha = pRow[x * 4 + 3];
+               COLORREF color = RGB(red, green, blue);
 
                 // 直接赋值到二维结构：第y行第x列
-                pixel2DData[y][x] = { red, green, blue, alpha };
+                pixel2DData[y][x] = { red, green, blue, alpha, color };
             }
         }
 
         // 解锁缓冲区
         bitmap.UnlockBits(&bitmapData);
         return pixel2DData;
+    }
+
+    // 计算二维vector的最大列数（所有行中最长的列数）
+    size_t GetMaxColumnCount(const std::vector<std::vector<ImageUtil::PixelInfo>>& pixelList) {
+        size_t maxCol = 0;
+        for (const auto& rowPixels : pixelList) {
+            if (rowPixels.size() > maxCol) {
+                maxCol = rowPixels.size();
+            }
+        }
+        return maxCol;
     }
 
 
