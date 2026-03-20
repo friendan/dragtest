@@ -56,6 +56,8 @@ namespace MainWindow
     }
 
     void StartMainWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
+        DeleteFileW(L"app.log");
+        
         if (!RegisterWindowClass(hInstance)) {
             MessageBox(NULL, L"窗口类注册失败！", L"错误", MB_ICONEXCLAMATION | MB_OK);
             return;
@@ -364,7 +366,7 @@ namespace MainWindow
                 dstFileName = getHexStrFromPixelList(pixelList);
             }else{
                 std::string hexStr = getHexStrFromPixelList(pixelList);
-                
+
             }
         }
 
@@ -376,15 +378,66 @@ namespace MainWindow
         if(rowSize < 10) return hexStr;
 
         size_t maxCol = GetMaxColumnCount(pixelList);
+        int blackTotal = 0;
+        int aColorTotal = 0;
+        int bColorTotal = 0;
+        int cColorTotal = 0;
+
+        bool findFirstGrid = false;     // 是否找到了第一个格子
+        int rgbTotalForFirstGrid = 0;
+        
         for (size_t col = 0; col < maxCol; ++col) {
+            blackTotal = 0;
+            aColorTotal = 0;
+            bColorTotal = 0;
+            cColorTotal = 0;
+
             for (size_t row = 0; row < pixelList.size(); ++row) {
                 const auto& rowPixels = pixelList[row];
                 if (col >= rowPixels.size()) {
                     continue;
                 }
+
                 const ImageUtil::PixelInfo& pixel = rowPixels[col];
-                
+                if(pixel.color == AppConst::COLOR_BLACK){
+                    blackTotal += 1;
+                }
+
+                if(blackTotal >= AppConst::GRID_SIZE && col >= AppConst::GRID_SIZE){
+                    if(pixel.color == AppConst::GRID_COLOR_A){
+                        aColorTotal += 1;
+                    }else if(pixel.color == AppConst::GRID_COLOR_B){
+                        bColorTotal += 1;
+                    }else if(pixel.color == AppConst::GRID_COLOR_C){
+                        cColorTotal += 1;
+                    }
+                }
             }
+
+            // 颜色数量至少是一个格子的大小才行
+            if(aColorTotal < AppConst::GRID_SIZE) aColorTotal = 0;
+            if(bColorTotal < AppConst::GRID_SIZE) bColorTotal = 0;
+            if(cColorTotal < AppConst::GRID_SIZE) cColorTotal = 0;
+
+            if(!findFirstGrid && aColorTotal == 0 && bColorTotal == 0 && cColorTotal == 0){
+                rgbTotalForFirstGrid += 1;
+            }
+            if(rgbTotalForFirstGrid >= AppConst::GRID_SIZE){
+                if(aColorTotal >= AppConst::GRID_SIZE || 
+                   bColorTotal >= AppConst::GRID_SIZE || 
+                   bColorTotal >= AppConst::GRID_SIZE){
+                    findFirstGrid = true;
+                }
+            }
+
+            AppUtil::SaveLog("col ", col
+                , " colorTotal ", blackTotal
+                , " ", aColorTotal
+                , " ", bColorTotal
+                , " ", cColorTotal
+                , " ", rgbTotalForFirstGrid
+                , " ", findFirstGrid
+            );
         }
 
 
