@@ -4,19 +4,42 @@
 #include "ImageUtil.h"
 #include "DrawUtil.h"
 #include <commctrl.h>
+#include <Shlwapi.h>
+#include <thread>
+#include <mutex>
+#include <atomic>
+#include <memory>
+#include <algorithm>
 
 namespace MainWindow
 {
     const wchar_t* g_szClassName = L"HexViewWindowClass";
     const int WM_DISPLAY_HEX_DATA = WM_USER + 1;
+    const int WM_UPDATE_IMAGE_LIST = WM_USER + 2; // 自定义UI更新消息
     HWND gMainWindow = NULL;
     HWND gStatusBar = NULL;  // 状态栏句柄
     const int STATUS_BAR_PARTS = 3; // 状态栏列数
     int gStatusBarWidths[STATUS_BAR_PARTS]; // 存储3列宽度
 
+    // C++11 线程相关（替代Windows临界区/线程句柄）
+    std::mutex gImageFilesMutex;          // 保护图片列表的互斥锁
+    std::atomic<bool> gIsProcessing{false}; // 原子变量：是否正在处理（线程安全）
+    std::unique_ptr<std::thread> gWorkerThread; // 智能指针管理线程，自动释放
+
+    // 图片文件信息结构体
+    struct ImageFileInfo {
+        std::wstring filePath;
+        FILETIME createTime;
+    };
+    std::vector<ImageFileInfo> gImageFiles;
+
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     BOOL RegisterWindowClass(HINSTANCE hInstance);
     void CreateStatusBar(HWND hwnd); // 创建状态栏
+    void RefreshWindow(HWND hwnd);
+    bool IsImageFile(const std::wstring& filePath);
+    bool CompareImageFileByCreateTime(const ImageFileInfo& a, const ImageFileInfo& b);
+    void ProcessFolder(const std::wstring& folderPath, HWND hwnd);
     
     BOOL RegisterWindowClass(HINSTANCE hInstance) {
         WNDCLASSEX wc = {0};
@@ -64,6 +87,11 @@ namespace MainWindow
         while (GetMessage(&msg, NULL, 0, 0) > 0) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
+        }
+
+        // 窗口退出：等待线程结束（最多5秒）
+        if (gWorkerThread && gWorkerThread->joinable()) {
+            gWorkerThread->join(); // 等待线程完成
         }
         
         DrawUtil::UnInitDraw();
@@ -116,23 +144,67 @@ namespace MainWindow
             case WM_CREATE:
                 break;
 
-            // 处理文件拖拽
+            // 处理文件拖拽（仅创建线程，无耗时操作）
             case WM_DROPFILES: {
                 HDROP hDrop = (HDROP)wParam;
-                wchar_t szFilePath[MAX_PATH] = {0};
-                
-                // 只读取第一个拖拽的文件
-                if (DragQueryFile(hDrop, 0, szFilePath, MAX_PATH)) {
-                    
-                    // 可选：获取文件大小
-                    WIN32_FILE_ATTRIBUTE_DATA fileData;
-                    if (GetFileAttributesEx(szFilePath, GetFileExInfoStandard, &fileData)) {
-                        ULONGLONG fileSize = (ULONGLONG)fileData.nFileSizeHigh << 32 | fileData.nFileSizeLow;
-                        wchar_t szSizeText[50] = {0};
-                        wsprintf(szSizeText, L"大小：%llu 字节", fileSize);
+                wchar_t szPath[MAX_PATH] = {0};
+                if (DragQueryFile(hDrop, 0, szPath, MAX_PATH)) {
+                    DWORD attr = GetFileAttributes(szPath);
+                    if (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY)) {
+                        // 原子判断：防止重复处理（线程安全）
+                        if (gIsProcessing.load()) {
+                            MessageBox(hwnd, L"正在处理文件夹，请稍候！", L"提示", MB_ICONINFORMATION | MB_OK);
+                            DragFinish(hDrop);
+                            return 0;
+                        }
+
+                        // 设置处理中状态（原子操作）
+                        gIsProcessing = true;
+                        // 更新状态栏提示
+                        SendMessage(gStatusBar, SB_SETTEXT, 0, (LPARAM)L"working...");
+                        SendMessage(gStatusBar, SB_SETTEXT, 1, (LPARAM)L"waiting");
+                        RefreshWindow(hwnd);
+
+                        // 先等待之前的线程结束（如果存在）
+                        if (gWorkerThread && gWorkerThread->joinable()) {
+                            gWorkerThread->join();
+                        }
+
+                        // C++11 创建线程：用智能指针管理，自动释放
+                        gWorkerThread = std::make_unique<std::thread>(
+                            &MainWindow::ProcessFolder, // 线程函数
+                            std::wstring(szPath),       // 文件夹路径（值传递，避免悬空指针）
+                            hwnd                        // 窗口句柄
+                        );
+
+                        // 分离线程？不！用joinable()在窗口销毁时join，避免内存泄漏
+                        // gWorkerThread->detach(); // 不推荐，建议用智能指针+join
+                    } else {
+                        // MessageBox(hwnd, L"请拖拽文件夹（而非单个文件）！", L"提示", MB_ICONINFORMATION | MB_OK);
                     }
                 }
                 DragFinish(hDrop);
+                break;
+            }
+
+            // 处理线程完成后的UI更新（主线程执行）
+            case WM_UPDATE_IMAGE_LIST: {
+                std::wstring folderPath = (wchar_t*)lParam;
+                
+                // 更新状态栏
+                if (gStatusBar) {
+                    // 图片数量（加锁读取）
+                    std::lock_guard<std::mutex> lock(gImageFilesMutex);
+                    int imageCount = (int)gImageFiles.size();
+                    wchar_t countText[50] = {0};
+                    wsprintf(countText, L"图片数量：%d", imageCount);
+                    SendMessage(gStatusBar, SB_SETTEXT, 0, (LPARAM)countText);
+
+                    SendMessage(gStatusBar, SB_SETTEXT, 1, (LPARAM)L"finish");
+                    SendMessage(gStatusBar, SB_SETTEXT, 2, (LPARAM)folderPath.c_str());
+                }
+
+                // 刷新窗口
                 RefreshWindow(hwnd);
                 break;
             }
@@ -183,6 +255,10 @@ namespace MainWindow
             }
 
             case WM_DESTROY:
+                // 窗口销毁：等待线程结束，避免资源泄漏
+                if (gWorkerThread && gWorkerThread->joinable()) {
+                    gWorkerThread->join();
+                }
                 PostQuitMessage(0);
                 break;
 
@@ -191,4 +267,68 @@ namespace MainWindow
         }
         return 0;
     }
+
+     // 判断是否为图片文件
+    bool IsImageFile(const std::wstring& filePath) {
+        std::wstring ext = PathFindExtension(filePath.c_str());
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::towlower);
+        const std::vector<std::wstring> imageExts = {
+            L".jpg", L".jpeg", L".png", L".bmp", L".gif", 
+            L".tiff", L".tif", L".webp", L".ico"
+        };
+        return std::find(imageExts.begin(), imageExts.end(), ext) != imageExts.end();
+    }
+
+    // 排序比较函数
+    bool CompareImageFileByCreateTime(const ImageFileInfo& a, const ImageFileInfo& b) {
+        if (a.createTime.dwHighDateTime != b.createTime.dwHighDateTime) {
+            return a.createTime.dwHighDateTime < b.createTime.dwHighDateTime;
+        }
+        return a.createTime.dwLowDateTime < b.createTime.dwLowDateTime;
+    }
+
+    // C++11 工作线程函数：处理文件夹遍历（无UI操作）
+    void ProcessFolder(const std::wstring& folderPath, HWND hwnd) {
+        std::vector<ImageFileInfo> tempImageFiles;
+        // 遍历文件夹
+        std::wstring searchPath = folderPath + L"\\*.*";
+        WIN32_FIND_DATA findData = {0};
+        HANDLE hFind = FindFirstFile(searchPath.c_str(), &findData);
+        if (hFind != INVALID_HANDLE_VALUE) {
+            do {
+                if (wcscmp(findData.cFileName, L".") == 0 || wcscmp(findData.cFileName, L"..") == 0) {
+                    continue;
+                }
+                std::wstring fullPath = folderPath + L"\\" + findData.cFileName;
+                if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                    // 可选：递归遍历子文件夹
+                    // ProcessFolder(fullPath, hwnd);
+                    continue;
+                }
+                if (IsImageFile(fullPath)) {
+                    ImageFileInfo fileInfo;
+                    fileInfo.filePath = fullPath;
+                    fileInfo.createTime = findData.ftCreationTime;
+                    tempImageFiles.push_back(fileInfo);
+                }
+
+            } while (FindNextFile(hFind, &findData));
+            FindClose(hFind);
+        }
+
+        // 排序
+        std::sort(tempImageFiles.begin(), tempImageFiles.end(), CompareImageFileByCreateTime);
+
+        // 线程安全：更新全局列表（加互斥锁）
+        std::lock_guard<std::mutex> lock(gImageFilesMutex); // RAII自动解锁
+        gImageFiles = tempImageFiles;
+
+        // 发送自定义消息给主线程，通知更新UI
+        SendMessage(hwnd, WM_UPDATE_IMAGE_LIST, 0, (LPARAM)folderPath.c_str());
+
+        // 重置处理状态（原子操作，线程安全）
+        gIsProcessing = false;
+    }
+
+
 } // namespace MainWindow end
