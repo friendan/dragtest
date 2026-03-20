@@ -339,7 +339,7 @@ namespace MainWindow
 
         AppUtil::SaveLog("gImageFiles.size() ", gImageFiles.size());
         ExtractImageData(folderPath);
-        
+
         // 重置处理状态（原子操作，线程安全）
         gIsProcessing = false;
         AppUtil::SaveLog("ProcessFolder finish");
@@ -347,8 +347,19 @@ namespace MainWindow
 
     void ExtractImageData(const std::wstring& folderPath){
         if(gImageFiles.size() < 1) return;
+        std::string dstFileName;
+        bool parseFileName = true;
         for(auto& fileInfo : MainWindow::gImageFiles){
             AppUtil::SaveLog(fileInfo.filePath);
+            std::string imagePath = AppUtil::Utf16ToUtf8(fileInfo.filePath);
+            std::vector<std::vector<ImageUtil::PixelInfo>> pixelList = ImageUtil::TraverseImagePixels(imagePath);
+            AppUtil::SaveLog("pixelList.size() ", pixelList.size());
+            if(parseFileName){
+                parseFileName = false;
+
+            }else{
+                
+            }
         }
 
     }
