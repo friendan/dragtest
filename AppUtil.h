@@ -32,8 +32,13 @@ namespace AppUtil
     std::string GetTimeStr();
     void SaveLog(const std::string& msg);
     void SaveLog(const std::wstring& msg);
+    
     template <typename T>
-    void SaveLog(const T& value);
+    void SaveLog(const T& value) {
+        std::stringstream ss;
+        ss << value;
+        SaveLog(ss.str());
+    }
 
 
 } // namespace AppUtil end

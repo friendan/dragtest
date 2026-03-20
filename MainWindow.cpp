@@ -3,6 +3,7 @@
 #include "AppConstants.h"
 #include "ImageUtil.h"
 #include "DrawUtil.h"
+#include "AppUtil.h"
 #include <commctrl.h>
 #include <Shlwapi.h>
 #include <thread>
@@ -289,6 +290,7 @@ namespace MainWindow
 
     // C++11 工作线程函数：处理文件夹遍历（无UI操作）
     void ProcessFolder(const std::wstring& folderPath, HWND hwnd) {
+        AppUtil::SaveLog("ProcessFolder start");
         std::vector<ImageFileInfo> tempImageFiles;
         // 遍历文件夹
         std::wstring searchPath = folderPath + L"\\*.*";
@@ -310,6 +312,7 @@ namespace MainWindow
                     fileInfo.filePath = fullPath;
                     fileInfo.createTime = findData.ftCreationTime;
                     tempImageFiles.push_back(fileInfo);
+                    AppUtil::SaveLog(fullPath);
                 }
 
             } while (FindNextFile(hFind, &findData));
@@ -328,6 +331,7 @@ namespace MainWindow
 
         // 重置处理状态（原子操作，线程安全）
         gIsProcessing = false;
+        AppUtil::SaveLog("ProcessFolder finish");
     }
 
 

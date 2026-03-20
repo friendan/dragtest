@@ -196,13 +196,6 @@ namespace AppUtil
 	void SaveLog(const std::wstring& msg){
 		write_log(Utf16ToUtf8(msg));
 	}
-
-	template <typename T>
-	void SaveLog(const T& value) {
-	    std::stringstream ss;
-	    ss << value;
-	    write_log(ss.str());
-	}
 	
 
 } // namespace AppUtil end
