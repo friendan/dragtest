@@ -552,7 +552,22 @@ namespace MainWindow
 
     std::string ColorListToHexString(const std::vector<size_t>& colorList){
         std::string hexStr;
-
+        std::ostringstream hexStrStream;
+        if(colorList.size() < 3 || colorList.size() % 3 != 0){
+            return hexStr;
+        }
+        size_t dec = 0;
+        size_t a = 0;
+        size_t b = 0;
+        size_t c = 0;
+        for(size_t idx = 0; idx < colorList.size(); ){
+            a = colorList[idx++];
+            b = colorList[idx++];
+            c = colorList[idx++];
+            dec = AppConst::TRIAD_TO_DEC_3D[a][b][c];
+            hexStrStream << AppConst::DEC_TO_HEX_TABLE[dec];
+        }
+        hexStr = hexStrStream.str();
         return hexStr;
     }
 

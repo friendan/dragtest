@@ -16,6 +16,9 @@ namespace AppConst
     constexpr COLORREF COLOR_BLACK  = RGB(0, 0, 0);         // 纯黑色
     constexpr const wchar_t* SLAVE_APP_TITLE = L"GridMap";
     //std::string utf8_str = u8"中文测试😀"; // C++11+支持u8前缀标识UTF-8字面量
+
+    // 索引0-15 → 字符0-F
+    constexpr const char DEC_TO_HEX_TABLE[16] = {'0', '1', '2', '3', '4', '5', '6', '7','8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
     
     // 三进制映射表：下标0-15对应字符0-F，值为3位三进制数（画刷索引）
     constexpr const int BRUSH_TRIAD_TABLE[16][3] = {
@@ -36,7 +39,7 @@ namespace AppConst
         {1,1,2}, // E → 十进制14 → 三进制112
         {1,2,0}  // F → 十进制15 → 三进制120
     };
-    
+
     // 3维数组实现反向映射：[t0][t1][t2] → 十进制值
     // 维度说明：t0(0-2), t1(0-2), t2(0-2)，值为对应十进制（无效值=-1）
     // 使用3 维数组实现三进制到十进制的映射，是最贴合「直观映射」需求的方案 —— 数组的三个维度直接对应三进制的3个位，数组值就是对应的十进制数，无需计算、无需遍历，查表效率是极致的 O (1)。
