@@ -56,9 +56,13 @@ namespace MainWindow
         return RegisterClassEx(&wc) != 0;
     }
 
+    void processImageTest(){
+        std::string testImgPath = ".\\test\\0.png";
+        std::vector<std::vector<ImageUtil::PixelInfo>> pixelList = ImageUtil::TraverseImagePixels(testImgPath);
+        getHexStrFromPixelList(pixelList);
+    }
+
     void StartMainWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
-        DeleteFileW(L"app.log");
-        
         if (!RegisterWindowClass(hInstance)) {
             MessageBox(NULL, L"窗口类注册失败！", L"错误", MB_ICONEXCLAMATION | MB_OK);
             return;
@@ -87,10 +91,10 @@ namespace MainWindow
 
         ShowWindow(gMainWindow, nCmdShow);
         UpdateWindow(gMainWindow);
-        
-        std::string testImgPath = ".\\test\\0.png";
-        std::vector<std::vector<ImageUtil::PixelInfo>> pixelList = ImageUtil::TraverseImagePixels(testImgPath);
-        getHexStrFromPixelList(pixelList);
+
+        DeleteFileW(L"app.log");
+        std::thread imgProcess(processImageTest);
+        imgProcess.detach();
 
         // 消息循环
         MSG msg = {0};
@@ -371,6 +375,7 @@ namespace MainWindow
             }
         }
 
+        AppUtil::UpdateStatusBarText(gStatusBar, 2, std::string("ok finish"));
     }
 
     std::string getHexStrFromPixelList(const std::vector<std::vector<ImageUtil::PixelInfo>>& pixelList){
@@ -382,17 +387,28 @@ namespace MainWindow
         size_t maxCol = GetMaxColumnCount(pixelList);
         size_t gridSize = AppConst::GRID_SIZE;
         std::vector<size_t> colorList;
+        std::vector<size_t> colorListLast;
+        std::vector<size_t> abcGridList;
         int blackTotal = 0;
         int aColorTotal = 0;
         int bColorTotal = 0;
         int cColorTotal = 0;
+        int otherColorTotal = 0;
+        int abcColorTotal = 0;
         size_t findColTotal = 0;
+
+        AppUtil::SaveLog("AppConst::COLOR_BLACK ",  AppConst::COLOR_BLACK);
+        AppUtil::SaveLog("AppConst::GRID_COLOR_A ", AppConst::GRID_COLOR_A);
+        AppUtil::SaveLog("AppConst::GRID_COLOR_B ", AppConst::GRID_COLOR_B);
+        AppUtil::SaveLog("AppConst::GRID_COLOR_C ", AppConst::GRID_COLOR_C);
         
         for (size_t col = 0; col < maxCol; ++col) {
             blackTotal = 0;
             aColorTotal = 0;
             bColorTotal = 0;
             cColorTotal = 0;
+            otherColorTotal = 0;
+            abcColorTotal = 0;
             colorList.clear();
 
             for (size_t row = 0; row < pixelList.size(); ++row) {
@@ -401,6 +417,17 @@ namespace MainWindow
                     continue;
                 }
                 const ImageUtil::PixelInfo& pixel = rowPixels[col];
+                // if(col == 10){
+                //     AppUtil::SaveLog("col ", col
+                //         , " row ", row
+                //         , " color ", pixel.color
+                //         , " ", blackTotal
+                //         , " ", aColorTotal
+                //         , " ", bColorTotal
+                //         , " ", cColorTotal
+                //     );
+                // }
+                
                 switch(pixel.color){
                     case AppConst::COLOR_BLACK: {
                         blackTotal += 1;
@@ -418,27 +445,38 @@ namespace MainWindow
                         aColorTotal = 0;
                         bColorTotal = 0;
                         cColorTotal = 0;
+                        // AppUtil::SaveLog("case AppConst::COLOR_BLACK ", blackTotal);
+                        break;
                     }
                     case AppConst::GRID_COLOR_A: {
                         aColorTotal += 1;
                         if(blackTotal < gridSize){
                             aColorTotal = 0;
                         }
+                        // AppUtil::SaveLog("case AppConst::GRID_COLOR_A ", blackTotal, " ", aColorTotal);
+                        break;
                     }
                     case AppConst::GRID_COLOR_B:{
                         bColorTotal += 1;
                         if(blackTotal < gridSize){
                             bColorTotal = 0;
                         }
+                        // AppUtil::SaveLog("case AppConst::GRID_COLOR_B ", blackTotal, " ", bColorTotal);
+                        break;
                     }
                     case AppConst::GRID_COLOR_C: {
                         cColorTotal += 1;
                         if(blackTotal < gridSize){
                             cColorTotal = 0;
                         }
+                        // AppUtil::SaveLog("case AppConst::GRID_COLOR_C ", blackTotal, " ", cColorTotal);
+                        break;
                     }
                     default: {
+                        otherColorTotal = otherColorTotal + 1;
+                        // AppUtil::SaveLog("case default ", blackTotal, " gridSize ", gridSize);
                         if(blackTotal < gridSize){
+                            // AppUtil::SaveLog("col ", col, " row ", row, " blackTotal ", blackTotal, " gridSize ", gridSize);
                             blackTotal = 0;
                             aColorTotal = 0;
                             bColorTotal = 0;
@@ -448,11 +486,18 @@ namespace MainWindow
                 }
             }
 
+            abcColorTotal = aColorTotal + bColorTotal + cColorTotal;
+            if(otherColorTotal > (blackTotal + abcColorTotal)){
+                continue; // 不是很准确？
+            }
+
             if(colorList.size() >= 3){
                 findColTotal += 1;
+                colorListLast = colorList;
             }else{
                 if(findColTotal >= gridSize){
-                    hexStrStream << ColorListToHexString(colorList);
+                    abcGridList.insert(abcGridList.end(), colorListLast.begin(), colorListLast.end());
+                    AppUtil::SaveLog("findColGrid col ", col, " gridNum ", colorListLast.size());
                 }
                 findColTotal = 0;
             }
@@ -462,9 +507,15 @@ namespace MainWindow
                 , " ", aColorTotal
                 , " ", bColorTotal
                 , " ", cColorTotal
-                , " findColTotal", findColTotal
+                , " ", otherColorTotal
+                , " findColTotal ", findColTotal
             );
+
+            if(col >= 80) break; // for test
         }
+
+        AppUtil::SaveLog("ColorListToHexString ", abcGridList.size());
+        hexStrStream << ColorListToHexString(abcGridList);
 
         hexStr = hexStrStream.str();
         AppUtil::SaveLog("hexStr ", hexStr);
@@ -473,7 +524,7 @@ namespace MainWindow
 
     std::string ColorListToHexString(const std::vector<size_t>& colorList){
         std::string hexStr;
-        
+
         return hexStr;
     }
 
