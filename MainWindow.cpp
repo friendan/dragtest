@@ -62,6 +62,32 @@ namespace MainWindow
         getHexStrFromPixelList(pixelList);
     }
 
+    void PrintTest(){
+        // ========== t0=0 的所有有效组合 ==========
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[0][0][0] = ", AppConst::TRIAD_TO_DEC_3D[0][0][0]); // 0
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[0][0][1] = ", AppConst::TRIAD_TO_DEC_3D[0][0][1]); // 1
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[0][0][2] = ", AppConst::TRIAD_TO_DEC_3D[0][0][2]); // 2
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[0][1][0] = ", AppConst::TRIAD_TO_DEC_3D[0][1][0]); // 3
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[0][1][1] = ", AppConst::TRIAD_TO_DEC_3D[0][1][1]); // 4
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[0][1][2] = ", AppConst::TRIAD_TO_DEC_3D[0][1][2]); // 5
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[0][2][0] = ", AppConst::TRIAD_TO_DEC_3D[0][2][0]); // 6
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[0][2][1] = ", AppConst::TRIAD_TO_DEC_3D[0][2][1]); // 7
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[0][2][2] = ", AppConst::TRIAD_TO_DEC_3D[0][2][2]); // 8
+
+        // ========== t0=1 的所有有效组合 ==========
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[1][0][0] = ", AppConst::TRIAD_TO_DEC_3D[1][0][0]); // 9
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[1][0][1] = ", AppConst::TRIAD_TO_DEC_3D[1][0][1]); // 10
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[1][0][2] = ", AppConst::TRIAD_TO_DEC_3D[1][0][2]); // 11
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[1][1][0] = ", AppConst::TRIAD_TO_DEC_3D[1][1][0]); // 12
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[1][1][1] = ", AppConst::TRIAD_TO_DEC_3D[1][1][1]); // 13
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[1][1][2] = ", AppConst::TRIAD_TO_DEC_3D[1][1][2]); // 14
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[1][2][0] = ", AppConst::TRIAD_TO_DEC_3D[1][2][0]); // 15
+
+        // ========== 可选：打印无效组合（验证-1） ==========
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[1][2][1] = ", AppConst::TRIAD_TO_DEC_3D[1][2][1]); // -1
+        AppUtil::SaveLog("TRIAD_TO_DEC_3D[2][0][0] = ", AppConst::TRIAD_TO_DEC_3D[2][0][0]); // -1
+    }
+
     void StartMainWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
         if (!RegisterWindowClass(hInstance)) {
             MessageBox(NULL, L"窗口类注册失败！", L"错误", MB_ICONEXCLAMATION | MB_OK);
@@ -92,7 +118,9 @@ namespace MainWindow
         ShowWindow(gMainWindow, nCmdShow);
         UpdateWindow(gMainWindow);
 
+        // test
         DeleteFileW(L"app.log");
+        PrintTest();
         std::thread imgProcess(processImageTest);
         imgProcess.detach();
 
