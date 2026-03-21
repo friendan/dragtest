@@ -547,6 +547,7 @@ namespace MainWindow
 
         hexStr = hexStrStream.str();
         AppUtil::SaveLog("hexStr ", hexStr);
+        AppUtil::SaveLog("hexStrToStr ", AppUtil::hexStrToStr(hexStr));
         return hexStr;
     }
 

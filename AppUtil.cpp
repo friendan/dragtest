@@ -9,6 +9,7 @@
 #include <commctrl.h>
 #include <mutex>
 #include <ctime>
+#include <cctype> // 用于toupper
 
 namespace AppUtil
 {
@@ -195,6 +196,43 @@ namespace AppUtil
 
 	void SaveLog(const std::wstring& msg){
 		write_log(Utf16ToUtf8(msg));
+	}
+
+	// 辅助函数：单个十六进制字符转数值（0-15），非法字符返回-1
+	int hexCharToVal(char c) {
+	    c = static_cast<char>(std::toupper(c));  // 大写转换，兼容小写输入
+	    if (c >= '0' && c <= '9') {
+	        return c - '0'; // 0-9 → 0-9
+	    } else if (c >= 'A' && c <= 'F') {
+	        return c - 'A' + 10; // A-F → 10-15
+	    }
+	    return -1; // 非法字符
+	}
+
+	std::string hexStrToStr(const std::string& hexStr) {
+	    std::string result;
+	    result.reserve(hexStr.length() / 2); // 预分配内存，避免多次扩容
+	    
+	    // 校验长度（偶数）
+	    if (hexStr.length() % 2 != 0) {
+	        // throw std::invalid_argument("十六进制字符串长度必须为偶数");
+	        return result;
+	    }
+
+	    // 手动解析每两位
+	    for (size_t i = 0; i < hexStr.length(); i += 2) {
+	        char c1 = hexStr[i];
+	        char c2 = hexStr[i+1];
+	        int val1 = hexCharToVal(c1);
+	        int val2 = hexCharToVal(c2);
+	        if (val1 == -1 || val2 == -1) {
+	        	return result;
+	        }
+	        // 组合为字节（高位<<4 + 低位，等价于 val1*16 + val2）
+	        unsigned char byte = static_cast<unsigned char>((val1 << 4) | val2);
+	        result.push_back(byte);
+	    }
+	    return result;
 	}
 	
 
