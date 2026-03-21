@@ -56,13 +56,13 @@ namespace DrawUtil
 
     void DecGridSize(int decVal){
         // gGridSizeAdd -= decVal; // 不能这样 size_t是无符号整数 0-=1会溢出，导致程序异常
-        if(decVal > gGridSizeAdd){
+        if(decVal >= gGridSizeAdd){
             gGridSizeAdd = 0;
         }else{
             gGridSizeAdd -= decVal;
         }
     }
-
+    
     size_t GetGridSize(){
         return AppConst::GRID_SIZE + gGridSizeAdd;
     }

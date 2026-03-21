@@ -43,6 +43,7 @@ namespace MainWindow
     void ProcessFolder(const std::wstring& folderPath, HWND hwnd);
     void ExtractImageData(const std::wstring& folderPath);
     std::string getHexStrFromPixelList(const std::vector<std::vector<ImageUtil::PixelInfo>>& pixelList);
+    std::string ColorListToHexString(const std::vector<size_t>& colorList);
     
     BOOL RegisterWindowClass(HINSTANCE hInstance) {
         WNDCLASSEX wc = {0};
@@ -374,60 +375,86 @@ namespace MainWindow
 
     std::string getHexStrFromPixelList(const std::vector<std::vector<ImageUtil::PixelInfo>>& pixelList){
         std::string hexStr;
+        std::ostringstream hexStrStream;
         size_t rowSize = pixelList.size();
         if(rowSize < 10) return hexStr;
 
         size_t maxCol = GetMaxColumnCount(pixelList);
+        size_t gridSize = AppConst::GRID_SIZE;
+        std::vector<size_t> colorList;
         int blackTotal = 0;
         int aColorTotal = 0;
         int bColorTotal = 0;
         int cColorTotal = 0;
-
-        bool findFirstGrid = false;     // 是否找到了第一个格子
-        int rgbTotalForFirstGrid = 0;
+        size_t findColTotal = 0;
         
         for (size_t col = 0; col < maxCol; ++col) {
             blackTotal = 0;
             aColorTotal = 0;
             bColorTotal = 0;
             cColorTotal = 0;
+            colorList.clear();
 
             for (size_t row = 0; row < pixelList.size(); ++row) {
                 const auto& rowPixels = pixelList[row];
                 if (col >= rowPixels.size()) {
                     continue;
                 }
-
                 const ImageUtil::PixelInfo& pixel = rowPixels[col];
-                if(pixel.color == AppConst::COLOR_BLACK){
-                    blackTotal += 1;
-                }
+                switch(pixel.color){
+                    case AppConst::COLOR_BLACK: {
+                        blackTotal += 1;
 
-                if(blackTotal >= AppConst::GRID_SIZE && col >= AppConst::GRID_SIZE){
-                    if(pixel.color == AppConst::GRID_COLOR_A){
+                        if(aColorTotal >= gridSize){
+                            colorList.push_back(0);
+                        }
+                        if(bColorTotal >= gridSize){
+                            colorList.push_back(1);
+                        }
+                        if(cColorTotal >= gridSize){
+                            colorList.push_back(2);
+                        }
+
+                        aColorTotal = 0;
+                        bColorTotal = 0;
+                        cColorTotal = 0;
+                    }
+                    case AppConst::GRID_COLOR_A: {
                         aColorTotal += 1;
-                    }else if(pixel.color == AppConst::GRID_COLOR_B){
+                        if(blackTotal < gridSize){
+                            aColorTotal = 0;
+                        }
+                    }
+                    case AppConst::GRID_COLOR_B:{
                         bColorTotal += 1;
-                    }else if(pixel.color == AppConst::GRID_COLOR_C){
+                        if(blackTotal < gridSize){
+                            bColorTotal = 0;
+                        }
+                    }
+                    case AppConst::GRID_COLOR_C: {
                         cColorTotal += 1;
+                        if(blackTotal < gridSize){
+                            cColorTotal = 0;
+                        }
+                    }
+                    default: {
+                        if(blackTotal < gridSize){
+                            blackTotal = 0;
+                            aColorTotal = 0;
+                            bColorTotal = 0;
+                            cColorTotal = 0;
+                        }
                     }
                 }
             }
 
-            // 颜色数量至少是一个格子的大小才行
-            if(aColorTotal < AppConst::GRID_SIZE) aColorTotal = 0;
-            if(bColorTotal < AppConst::GRID_SIZE) bColorTotal = 0;
-            if(cColorTotal < AppConst::GRID_SIZE) cColorTotal = 0;
-
-            if(!findFirstGrid && aColorTotal == 0 && bColorTotal == 0 && cColorTotal == 0){
-                rgbTotalForFirstGrid += 1;
-            }
-            if(rgbTotalForFirstGrid >= AppConst::GRID_SIZE){
-                if(aColorTotal >= AppConst::GRID_SIZE || 
-                   bColorTotal >= AppConst::GRID_SIZE || 
-                   bColorTotal >= AppConst::GRID_SIZE){
-                    findFirstGrid = true;
+            if(colorList.size() >= 3){
+                findColTotal += 1;
+            }else{
+                if(findColTotal >= gridSize){
+                    hexStrStream << ColorListToHexString(colorList);
                 }
+                findColTotal = 0;
             }
 
             AppUtil::SaveLog("col ", col
@@ -435,12 +462,18 @@ namespace MainWindow
                 , " ", aColorTotal
                 , " ", bColorTotal
                 , " ", cColorTotal
-                , " ", rgbTotalForFirstGrid
-                , " ", findFirstGrid
+                , " findColTotal", findColTotal
             );
         }
 
+        hexStr = hexStrStream.str();
+        AppUtil::SaveLog("hexStr ", hexStr);
+        return hexStr;
+    }
 
+    std::string ColorListToHexString(const std::vector<size_t>& colorList){
+        std::string hexStr;
+        
         return hexStr;
     }
 
