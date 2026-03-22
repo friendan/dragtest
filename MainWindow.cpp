@@ -116,9 +116,20 @@ namespace MainWindow
     // 添加日志行（线程安全，支持多线程调用）
     void AddLogLine(const std::wstring& logLine) {
         std::lock_guard<std::mutex> lock(gLogMutex);
+        SYSTEMTIME st = {0};
+        GetLocalTime(&st);
+
+        // 格式化时间为 "YYYY-MM-DD HH:MM:SS " 格式（宽字符串）
+        wchar_t timePrefix[32] = {0};
+        wsprintf(timePrefix, 
+            L"%04d-%02d-%02d %02d:%02d:%02d ", 
+            st.wYear, st.wMonth, st.wDay, 
+            st.wHour, st.wMinute, st.wSecond);
+
+        std::wstring logWithTime = timePrefix + logLine;
     
         // 添加日志行、裁剪最大行数
-        gLogLines.push_back(logLine);
+        gLogLines.push_back(logWithTime);
         if (gLogLines.size() > LOG_MAX_LINES) {
             gLogLines.erase(gLogLines.begin());
             gLogTopOffset = max(0, gLogTopOffset - 1);
