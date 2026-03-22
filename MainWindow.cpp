@@ -88,7 +88,7 @@ namespace MainWindow
 
         // ========== 创建全局日志字体（仅一次） ==========
         HDC hdc = GetDC(hwnd);
-        int pointSize = 12;
+        int pointSize = 14;
         int logpixelsy = GetDeviceCaps(hdc, LOGPIXELSY);
         int fontHeight = -MulDiv(pointSize, logpixelsy, 72);
         gLogFont = CreateFont(
@@ -135,16 +135,24 @@ namespace MainWindow
             gLogTopOffset = max(0, gLogTopOffset - 1);
         }
 
-        // 计算滚动条最大位置
-        int visibleLines = (gLogAreaRect.bottom - gLogAreaRect.top) / gLogLineHeight;
+       // ========== 修复：基于实际行高计算滚动条 ==========
+        HDC hdc = GetDC(gMainWindow);
+        SelectObject(hdc, gLogFont);
+        TEXTMETRIC tm = {0};
+        GetTextMetrics(hdc, &tm);
+        int realLineHeight = tm.tmHeight + tm.tmExternalLeading;
+        ReleaseDC(gMainWindow, hdc);
+
+        int visibleLines = (gLogAreaRect.bottom - gLogAreaRect.top) / realLineHeight;
         int maxScrollPos = max(0, (int)gLogLines.size() - visibleLines);
         
-        // 日志行数 <= 可视行数时，隐藏滚动条；否则显示
         if (gLogLines.size() <= visibleLines) {
             ShowWindow(gLogScrollBar, SW_HIDE);
         } else {
             ShowWindow(gLogScrollBar, SW_SHOW);
             SendMessage(gLogScrollBar, SBM_SETRANGE, 0, MAKELPARAM(0, maxScrollPos));
+            // 自动滚动到最底部（可选，提升体验）
+            gLogTopOffset = maxScrollPos;
             SendMessage(gLogScrollBar, SBM_SETPOS, gLogTopOffset, 0);
         }
 
@@ -156,42 +164,64 @@ namespace MainWindow
         AddLogLine(AppUtil::Utf8ToUtf16(logLine)); // 需确保AppUtil有Utf8ToUtf16转换函数
     }
 
-    // 绘制日志（在WM_PAINT中调用）
+    // 绘制日志（最终修复版：时间和内容同行+精准换行）
     void DrawLog(HDC hdc) {
-       // 线程安全锁
         std::lock_guard<std::mutex> lock(gLogMutex);
         if (gLogLines.empty()) return;
 
-        // ======= 复用全局字体（仅选入，不重复创建） ==========
-        if (gLogFont == NULL) { // 极端容错：字体未创建则用默认
+        // 复用字体
+        if (gLogFont == NULL) {
             gLogFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
         }
         HFONT hOldFont = (HFONT)SelectObject(hdc, gLogFont);
 
-        // ========== 设置文本样式 ==========
-        SetTextColor(hdc, RGB(0, 255, 0));  // 绿色文字
-        SetBkColor(hdc, RGB(0, 0, 0));      // 黑色背景
-        SetBkMode(hdc, OPAQUE);             // 不透明
+        // 文本样式
+        SetTextColor(hdc, RGB(0, 255, 0));
+        SetBkColor(hdc, RGB(0, 0, 0));
+        SetBkMode(hdc, OPAQUE);
 
-        // ========== 计算可视行数 ==========
-        int visibleLines = (gLogAreaRect.bottom - gLogAreaRect.top) / gLogLineHeight;
-        int startLine = gLogTopOffset;
-        int endLine = min(startLine + visibleLines, (int)gLogLines.size());
+        // 核心参数（精准计算）
+        TEXTMETRIC tm = {0};
+        GetTextMetrics(hdc, &tm);
+        int lineHeight = tm.tmHeight + tm.tmExternalLeading;
+        // 修复：日志可显示宽度 = 日志区域总宽度 - 10px（仅左内边距）
+        int textWidth = gLogAreaRect.right - gLogAreaRect.left - 10; 
+        int currentY = gLogAreaRect.top;
 
-        // ========== 逐行绘制 ==========
-        int yPos = gLogAreaRect.top;
-        for (int i = startLine; i < endLine; ++i) {
-            TextOut(
-                hdc,
-                gLogAreaRect.left + 5,
-                yPos,
-                gLogLines[i].c_str(),
-                (int)gLogLines[i].length()
-            );
-            yPos += gLogLineHeight;
+        // 计算可视范围
+        int totalVisibleLines = (gLogAreaRect.bottom - gLogAreaRect.top) / lineHeight;
+        int startIdx = gLogTopOffset;
+        int endIdx = min(startIdx + totalVisibleLines, (int)gLogLines.size());
+
+        for (int i = startIdx; i < endIdx; i++) {
+            const std::wstring& line = gLogLines[i];
+            if (line.empty()) {
+                currentY += lineHeight;
+                continue;
+            }
+
+            // 修复：强制使用DrawText并关闭自动换行误判
+            RECT textRect = {
+                gLogAreaRect.left + 5,  // 左内边距5px
+                currentY,               // 当前Y坐标
+                gLogAreaRect.right - 5, // 右内边距5px（最大宽度）
+                currentY + lineHeight * 50 // 足够大的高度，避免截断
+            };
+
+            // 关键：使用DT_LEFT | DT_NOCLIP，仅当文本超宽时才换行
+            int drawFlags = DT_LEFT | DT_NOCLIP | DT_WORDBREAK;
+            DrawText(hdc, line.c_str(), (int)line.length(), &textRect, drawFlags);
+
+            // 计算实际占用高度，更新Y坐标
+            RECT calcRect = textRect;
+            DrawText(hdc, line.c_str(), (int)line.length(), &calcRect, drawFlags | DT_CALCRECT);
+            currentY += (calcRect.bottom - calcRect.top);
+
+            // 超出可视区域则停止
+            if (currentY > gLogAreaRect.bottom) break;
         }
 
-        // ========== 恢复旧字体（仅恢复，不删除全局字体） ==========
+        // 恢复字体
         SelectObject(hdc, hOldFont);
     }
 
