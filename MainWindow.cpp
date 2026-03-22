@@ -102,7 +102,7 @@ namespace MainWindow
             g_szClassName,
             L"Console",
             WS_OVERLAPPEDWINDOW | WS_VSCROLL, // 加垂直滚动条，方便查看多内容
-            CW_USEDEFAULT, CW_USEDEFAULT, 1000, 700,
+            CW_USEDEFAULT, CW_USEDEFAULT, 1024, 768,
             NULL, NULL, hInstance, NULL
         );
 
@@ -120,10 +120,11 @@ namespace MainWindow
 
         ShowWindow(gMainWindow, nCmdShow);
         UpdateWindow(gMainWindow);
-
+        SetWindowPos(gMainWindow, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE|SWP_NOSIZE);
+        
         // test
         DeleteFileW(L"app.log");
-        PrintTest();
+        // PrintTest();
         // std::thread imgProcess(processImageTest);
         // imgProcess.detach();
 
@@ -239,7 +240,7 @@ namespace MainWindow
                     std::lock_guard<std::mutex> lock(gImageFilesMutex);
                     int imageCount = (int)gImageFiles.size();
                     wchar_t countText[50] = {0};
-                    wsprintf(countText, L"图片数量：%d", imageCount);
+                    wsprintf(countText, L"images:%d", imageCount);
                     SendMessage(gStatusBar, SB_SETTEXT, 0, (LPARAM)countText);
 
                     SendMessage(gStatusBar, SB_SETTEXT, 1, (LPARAM)L"finish");
