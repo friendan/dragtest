@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 namespace MainWindow
 {
@@ -390,9 +391,11 @@ namespace MainWindow
     void ExtractImageData(const std::wstring& folderPath){
         if(gImageFiles.size() < 1) return;
         AppUtil::SaveLogW(L"folderPath ", folderPath);
-        
-        std::string dstFileName;
+        std::string strDir = AppUtil::Utf16ToUtf8(folderPath);
+        std::filesystem::path dirPath(strDir);
+        std::filesystem::path filePath;
         bool parseFileName = true;
+
         for(auto& fileInfo : MainWindow::gImageFiles){
             AppUtil::SaveLog(fileInfo.filePath);
             std::string imagePath = AppUtil::Utf16ToUtf8(fileInfo.filePath);
@@ -401,16 +404,18 @@ namespace MainWindow
             if(parseFileName){
                 parseFileName = false;
                 std::string tmpHexStr = getHexStrFromPixelList(pixelList);
-                dstFileName = AppUtil::hexStrToStr(tmpHexStr);
+                std::string dstFileName = AppUtil::hexStrToStr(tmpHexStr);
                 AppUtil::SaveLog("dstFileName ", dstFileName);
                 if(dstFileName.empty()){
                     return;
                 }
-                std::ofstream file(dstFileName, std::ios::out|std::ios::trunc);
+                filePath = dirPath / dstFileName;
+                AppUtil::SaveLog("filePath ", filePath.string());
+                std::ofstream file(filePath.string(), std::ios::out|std::ios::trunc);
                 file.close();
             }else{
                 std::string hexStr = getHexStrFromPixelList(pixelList);
-                AppUtil::hexStrToFile(hexStr, dstFileName);
+                AppUtil::hexStrToFile(hexStr, filePath.string());
             }
         }
 
@@ -536,11 +541,12 @@ namespace MainWindow
             }else{
                 if(findColTotal >= gridSize){
                     abcGridList.insert(abcGridList.end(), colorListLast.begin(), colorListLast.end());
-                    AppUtil::SaveLog("findColGrid col ", col, " gridNum ", colorListLast.size());
+                    // AppUtil::SaveLog("findColGrid col ", col, " gridNum ", colorListLast.size());
                 }
                 findColTotal = 0;
             }
 
+            /*
             AppUtil::SaveLog("col ", col
                 , " colorTotal ", blackTotal
                 , " ", aColorTotal
@@ -549,11 +555,12 @@ namespace MainWindow
                 , " ", otherColorTotal
                 , " findColTotal ", findColTotal
             );
+            */
 
             // if(col >= 80) break; // for test
         }
 
-        AppUtil::SaveLog("ColorListToHexString ", abcGridList.size());
+        AppUtil::SaveLog("ColorListToHexString abcGridList.size() ", abcGridList.size());
         hexStrStream << ColorListToHexString(abcGridList);
 
         hexStr = hexStrStream.str();
