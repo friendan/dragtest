@@ -44,7 +44,7 @@ namespace DrawUtil
         gGridSizeAdd = 0;
     }
 
-    void AddGridSize(int addVal){
+    bool AddGridSize(int addVal){
         size_t gGridSizeAddOld = gGridSizeAdd;
         gGridSizeAdd += addVal;
         
@@ -52,16 +52,22 @@ namespace DrawUtil
         GetWindowGridVector(gDrawWindow, rectVector);
         if(rectVector.size() < gNameHexStr.size()*3){
             gGridSizeAdd = gGridSizeAddOld;
+            return false;
         }
+        return true;
     }
 
-    void DecGridSize(int decVal){
+    bool DecGridSize(int decVal){
         // gGridSizeAdd -= decVal; // 不能这样 size_t是无符号整数 0-=1会溢出，导致程序异常
+        if(gGridSizeAdd <= 0){
+            return false;
+        }
         if(decVal >= gGridSizeAdd){
             gGridSizeAdd = 0;
         }else{
             gGridSizeAdd -= decVal;
         }
+        return true;
     }
     
     size_t GetGridSize(){

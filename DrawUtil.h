@@ -11,8 +11,8 @@ namespace DrawUtil
     void UnInitDraw();
     void NextPage();
     void ReStart();
-    void AddGridSize(int addVal);
-    void DecGridSize(int decVal);
+    bool AddGridSize(int addVal);
+    bool DecGridSize(int decVal);
     size_t GetGridSize();
     size_t GetNowPage();
 
