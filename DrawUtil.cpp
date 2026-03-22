@@ -15,6 +15,9 @@ namespace DrawUtil
     size_t gPageCharNum = 0;
     size_t gGridSizeAdd = 0;
     HWND gDrawWindow = NULL;
+    std::string gNameHexStr;
+
+    void GetWindowGridVector(HWND hwnd, std::vector<RECT>& rectVector);
 
     void InitDraw(){
         gBrushList[0] = CreateSolidBrush(AppConst::GRID_COLOR_A);
@@ -42,15 +45,13 @@ namespace DrawUtil
     }
 
     void AddGridSize(int addVal){
+        size_t gGridSizeAddOld = gGridSizeAdd;
         gGridSizeAdd += addVal;
-        if(gDrawWindow != NULL){
-            RECT rcClient;
-            GetClientRect(gDrawWindow, &rcClient);
-            int width  = (rcClient.right - rcClient.left) / 10;
-            int height = (rcClient.bottom - rcClient.top) / 10;
-            if(gGridSizeAdd > width || gGridSizeAdd > height){
-                gGridSizeAdd = width;
-            }
+        
+        std::vector<RECT> rectVector;
+        GetWindowGridVector(gDrawWindow, rectVector);
+        if(rectVector.size() < gNameHexStr.size()*3){
+            gGridSizeAdd = gGridSizeAddOld;
         }
     }
 
@@ -220,6 +221,7 @@ namespace DrawUtil
 
     void DrawDataGrid(HWND hwnd, HWND statusBar, const std::string& fileNameHexStr, const std::string& hexStr)
     {
+        gNameHexStr = fileNameHexStr;
         DrawBackground(hwnd);
         if(gCurrentPage <= 0){
             DrawFileNameGrid(hwnd, fileNameHexStr);
