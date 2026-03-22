@@ -64,5 +64,8 @@ namespace AppUtil
 
     bool hexStrToFile(const std::string& hexStr, const std::string& path);
 
+    std::string GetRandHexString(size_t len);
+    size_t GetRandNumber(size_t min, size_t max);
+
 } // namespace AppUtil end
 

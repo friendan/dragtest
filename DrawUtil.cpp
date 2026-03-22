@@ -195,7 +195,7 @@ namespace DrawUtil
         GetWindowGridVector(hwnd, rectVector);
 
         WCHAR szTitle[1024] = {0};
-        wsprintf(szTitle, L"%s %dx%d|%d %d"
+        wsprintf(szTitle, L"%s %dx%d|%d|%d"
             , AppConst::SLAVE_APP_TITLE
             , width
             , height
@@ -209,9 +209,9 @@ namespace DrawUtil
         AppUtil::UpdateStatusBarText(statusBar, 0, szPageInfo);
 
         WCHAR szCharInfo[64] = {0};
-        wsprintf(szCharInfo, L"%d %d", hexStr.size(), hexStr.size()*3);
+        wsprintf(szCharInfo, L"%d", hexStr.size());
         AppUtil::UpdateStatusBarText(statusBar, 1, szCharInfo);
-
+        
         if(hexStr.size() < 128){
             AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
         }

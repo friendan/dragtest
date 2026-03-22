@@ -154,6 +154,13 @@ namespace SlaveWindow
                     DrawUtil::NextPage();
                     RefreshWindow(hwnd);
                 }
+                else if(wParam == VK_RETURN){
+                    std::lock_guard<std::mutex> lock(gDataMutex);
+                    DrawUtil::ReStart();
+                    gFileNameHexStr = AppUtil::GetRandHexString(AppUtil::GetRandNumber(16, 1024));
+                    gHexString = AppUtil::GetRandHexString(AppUtil::GetRandNumber(1024, 1024*1024));
+                    RefreshWindow(hwnd);
+                }
                 else if(wParam == VK_OEM_MINUS || wParam == VK_SUBTRACT){
                     // VK_OEM_MINUS 主键盘减号
                     // VK_SUBTRACT  小键盘减号

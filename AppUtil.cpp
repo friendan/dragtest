@@ -10,6 +10,7 @@
 #include <mutex>
 #include <ctime>
 #include <cctype> // 用于toupper
+#include <random>
 
 namespace AppUtil
 {
@@ -262,6 +263,46 @@ namespace AppUtil
 	    }
 	    file.close();
 	    return true;
+	}
+
+	std::string GetRandHexString(size_t len){
+	    if (len == 0) {
+	       return "";
+	    }
+	    static char hex_chars[] = "0123456789ABCDEF";
+
+	    // 初始化随机数生成器（C++11 及以上推荐的安全方式）
+	    // 静态变量：避免每次调用重复初始化，提升性能且保证随机性
+	    static std::random_device rd;  // 硬件随机数种子（非确定性）
+	    static std::mt19937 gen(rd()); // 梅森旋转算法，高性能伪随机数生成器
+	    static std::uniform_int_distribution<> dist(0, 15); // 0-15 的均匀分布
+
+	    std::string hex_str;
+	    hex_str.reserve(len);
+	    for (size_t i = 0; i < len; ++i) {
+	        hex_str += hex_chars[dist(gen)];
+	    }
+	    return hex_str;
+	}
+
+	size_t GetRandNumber(size_t min, size_t max){
+	    if (min > max) {
+	   		return 0;
+	    }
+	    if (min == max) {
+	        return min;
+	    }
+
+	    // 初始化随机数生成器（静态变量：仅初始化一次，提升性能）
+	    // std::random_device：硬件随机数种子（非确定性，更安全）
+	    static std::random_device rd;
+	    // std::mt19937：高性能梅森旋转伪随机数生成器（优于rand()）
+	    static std::mt19937 gen(rd());
+
+	    //  定义闭区间 [min, max] 的均匀分布
+	    // 注意：std::uniform_int_distribution 支持 size_t 类型（C++11及以上）
+	    std::uniform_int_distribution<size_t> dist(min, max);
+	    return dist(gen);
 	}
 	
 
