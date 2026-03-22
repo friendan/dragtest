@@ -86,10 +86,14 @@ namespace DrawUtil
         size_t gridSize = GetGridSize();
         int width  = rcClient.right - rcClient.left;
         int height = rcClient.bottom - rcClient.top;
-        int startX = gridSize;
-        int startY = gridSize;
-        int xMax = width  - gridSize*3;
-        int yMax = height - gridSize*3;
+        size_t borderDistance = 8;
+        if(gridSize > borderDistance){
+            borderDistance = gridSize;
+        }
+        int startX = borderDistance*2;
+        int startY = borderDistance*2;
+        int xMax = width  - borderDistance*3;
+        int yMax = height - borderDistance*5;
 
         int xOffset = 0;
         for(int x = startX; x < xMax; x += gridSize){
@@ -211,7 +215,7 @@ namespace DrawUtil
         WCHAR szCharInfo[64] = {0};
         wsprintf(szCharInfo, L"%d", hexStr.size());
         AppUtil::UpdateStatusBarText(statusBar, 1, szCharInfo);
-        
+
         if(hexStr.size() < 128){
             AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
         }
