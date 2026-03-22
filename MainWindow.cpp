@@ -21,6 +21,7 @@ namespace MainWindow
     const wchar_t* g_szClassName = L"HexViewWindowClass";
     const int WM_DISPLAY_HEX_DATA = WM_USER + 1;
     const int WM_UPDATE_IMAGE_LIST = WM_USER + 2; // 自定义UI更新消息
+    const int WM_ADD_LOG_LINE = WM_USER + 3;
     HWND gMainWindow = NULL;
     HWND gStatusBar = NULL;  // 状态栏句柄
     const int STATUS_BAR_PARTS = 3; // 状态栏列数
@@ -38,6 +39,15 @@ namespace MainWindow
     };
     std::vector<ImageFileInfo> gImageFiles;
 
+    // 日志相关变量
+    const int LOG_MAX_LINES = 10000; // 最大缓存日志行数（防止内存溢出）
+    std::vector<std::wstring> gLogLines; // 日志行缓存
+    std::mutex gLogMutex;               // 日志操作互斥锁
+    HWND gLogScrollBar = NULL;          // 日志区域滚动条
+    int gLogLineHeight = 20;            // 每行日志高度（像素）
+    int gLogTopOffset = 0;              // 日志滚动偏移量
+    RECT gLogAreaRect;                  // 日志显示区域（排除状态栏）
+
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     BOOL RegisterWindowClass(HINSTANCE hInstance);
     void CreateStatusBar(HWND hwnd); // 创建状态栏
@@ -48,6 +58,115 @@ namespace MainWindow
     void ExtractImageData(const std::wstring& folderPath);
     std::string getHexStrFromPixelList(const std::vector<std::vector<ImageUtil::PixelInfo>>& pixelList);
     std::string ColorListToHexString(const std::vector<size_t>& colorList);
+
+     // 初始化日志区域（窗口创建后调用）
+    void InitLogArea(HWND hwnd) {
+        // 获取客户区大小，排除状态栏高度（24像素）
+        RECT rcClient;
+        GetClientRect(hwnd, &rcClient);
+        SetRect(&gLogAreaRect, 
+            rcClient.left + 10,          // 左边距10
+            rcClient.top + 10,           // 上边距10
+            rcClient.right - 10,         // 右边距10
+            rcClient.bottom - 34);       // 下边距=状态栏高度24+10
+        
+        // 创建垂直滚动条
+        gLogScrollBar = CreateWindowEx(
+            0,
+            L"SCROLLBAR",
+            NULL,
+            WS_CHILD | WS_VISIBLE | SBS_VERT,
+            gLogAreaRect.right - 17,     // 滚动条x坐标（日志区域右边界-17）
+            gLogAreaRect.top,            // 滚动条y坐标
+            17,                          // 滚动条宽度
+            gLogAreaRect.bottom - gLogAreaRect.top, // 滚动条高度
+            hwnd,
+            (HMENU)1002,                 // 滚动条ID
+            GetModuleHandle(NULL),
+            NULL
+        );
+
+        // 设置滚动条范围
+        SendMessage(gLogScrollBar, SBM_SETRANGE, 0, MAKELPARAM(0, 0));
+    }
+
+    // 添加日志行（线程安全，支持多线程调用）
+    void AddLogLine(const std::wstring& logLine) {
+        std::lock_guard<std::mutex> lock(gLogMutex);
+        
+        // 1. 添加日志行，超出最大行数则删除最旧的行
+        gLogLines.push_back(logLine);
+        if (gLogLines.size() > LOG_MAX_LINES) {
+            gLogLines.erase(gLogLines.begin());
+            gLogTopOffset = max(0, gLogTopOffset - 1); // 调整偏移
+        }
+
+        // 2. 更新滚动条范围
+        int maxScrollPos = max(0, (int)gLogLines.size() - (gLogAreaRect.bottom - gLogAreaRect.top) / gLogLineHeight);
+        SendMessage(gLogScrollBar, SBM_SETRANGE, 0, MAKELPARAM(0, maxScrollPos));
+        SendMessage(gLogScrollBar, SBM_SETPOS, gLogTopOffset, 0);
+
+        // 3. 通知主窗口刷新日志（线程安全：用PostMessage）
+        PostMessage(gMainWindow, WM_ADD_LOG_LINE, 0, 0);
+    }
+
+    // 重载：支持窄字符串
+    void AddLogLine(const std::string& logLine) {
+        AddLogLine(AppUtil::Utf8ToUtf16(logLine)); // 需确保AppUtil有Utf8ToUtf16转换函数
+    }
+
+    // 绘制日志（在WM_PAINT中调用）
+    void DrawLog(HDC hdc) {
+        std::lock_guard<std::mutex> lock(gLogMutex);
+        if (gLogLines.empty()) return;
+
+        // 设置文本颜色和背景色
+        SetTextColor(hdc, RGB(0, 255, 0)); // 绿色日志文本
+        SetBkColor(hdc, RGB(0, 0, 0));     // 黑色背景
+        SetBkMode(hdc, OPAQUE);
+
+        // 计算可显示的行数
+        int visibleLines = (gLogAreaRect.bottom - gLogAreaRect.top) / gLogLineHeight;
+        int startLine = gLogTopOffset;
+        int endLine = min(startLine + visibleLines, (int)gLogLines.size());
+
+        // 逐行绘制日志
+        int yPos = gLogAreaRect.top;
+        for (int i = startLine; i < endLine; ++i) {
+            TextOut(hdc, 
+                gLogAreaRect.left + 5,  // 文本x偏移
+                yPos,                   // 文本y坐标
+                gLogLines[i].c_str(),   // 日志文本
+                (int)gLogLines[i].length()); // 文本长度
+            yPos += gLogLineHeight;     // 下一行y坐标
+        }
+    }
+
+    // 处理滚动条消息
+    void HandleScrollMessage(HWND hwnd, WPARAM wParam, LPARAM lParam) {
+        int scrollCode = LOWORD(wParam);
+        int newPos = gLogTopOffset;
+        int maxPos = max(0, (int)gLogLines.size() - (gLogAreaRect.bottom - gLogAreaRect.top) / gLogLineHeight);
+
+        // 根据滚动操作计算新位置
+        switch (scrollCode) {
+            case SB_LINEUP:    newPos = max(0, newPos - 1); break;
+            case SB_LINEDOWN:  newPos = min(maxPos, newPos + 1); break;
+            case SB_PAGEUP:    newPos = max(0, newPos - 10); break;
+            case SB_PAGEDOWN:  newPos = min(maxPos, newPos + 10); break;
+            case SB_THUMBPOSITION: 
+            case SB_THUMBTRACK: newPos = HIWORD(wParam); break;
+            case SB_TOP:       newPos = 0; break;
+            case SB_BOTTOM:    newPos = maxPos; break;
+        }
+
+        // 更新滚动位置并刷新
+        if (newPos != gLogTopOffset) {
+            gLogTopOffset = newPos;
+            SendMessage(gLogScrollBar, SBM_SETPOS, newPos, 0);
+            RefreshWindow(hwnd);
+        }
+    }
     
     BOOL RegisterWindowClass(HINSTANCE hInstance) {
         WNDCLASSEX wc = {0};
@@ -106,7 +225,7 @@ namespace MainWindow
             CW_USEDEFAULT, CW_USEDEFAULT, 1024, 768,
             NULL, NULL, hInstance, NULL
         );
-        
+
         if (!gMainWindow) {
             MessageBox(NULL, L"窗口创建失败！", L"错误", MB_ICONEXCLAMATION | MB_OK);
             return;
@@ -118,6 +237,7 @@ namespace MainWindow
         CreateStatusBar(gMainWindow);
         DragAcceptFiles(gMainWindow, TRUE); // 启用拖拽
         DrawUtil::InitDraw();
+        InitLogArea(gMainWindow);
 
         ShowWindow(gMainWindow, nCmdShow);
         UpdateWindow(gMainWindow);
@@ -128,6 +248,9 @@ namespace MainWindow
         // PrintTest();
         // std::thread imgProcess(processImageTest);
         // imgProcess.detach();
+
+        AddLogLine(L"ready...");
+        AddLogLine(L"程序启动成功！");
 
         // 消息循环
         MSG msg = {0};
@@ -194,6 +317,17 @@ namespace MainWindow
                     SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);      // 设置窗口大图标
                     SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);    // 设置窗口小图标（标题栏）
                 }
+                InitLogArea(hwnd);
+                break;
+            }
+
+            case WM_ADD_LOG_LINE: {
+                RefreshWindow(hwnd);
+                break;
+            }
+
+            case WM_VSCROLL: {
+                HandleScrollMessage(hwnd, wParam, lParam);
                 break;
             }
 
@@ -291,6 +425,24 @@ namespace MainWindow
 
                 // 更新状态栏列宽
                 SendMessage(gStatusBar, SB_SETPARTS, STATUS_BAR_PARTS, (LPARAM)gStatusBarWidths);
+
+                 // 调整日志区域和滚动条
+                SetRect(&gLogAreaRect, 
+                    10, 10, 
+                    clientWidth - 27, // 减去滚动条宽度17+10边距
+                    clientHeight - 34);
+                if (gLogScrollBar) {
+                    MoveWindow(gLogScrollBar, 
+                        gLogAreaRect.right, 
+                        gLogAreaRect.top, 
+                        17, 
+                        gLogAreaRect.bottom - gLogAreaRect.top, 
+                        TRUE);
+                }
+
+                // 更新滚动条范围
+                int maxScrollPos = max(0, (int)gLogLines.size() - (gLogAreaRect.bottom - gLogAreaRect.top) / gLogLineHeight);
+                SendMessage(gLogScrollBar, SBM_SETRANGE, 0, MAKELPARAM(0, maxScrollPos));
                 RefreshWindow(hwnd);
                 break;
             }
@@ -298,6 +450,7 @@ namespace MainWindow
             case WM_PAINT: {
                 PAINTSTRUCT ps;
                 HDC hdc = BeginPaint(hwnd, &ps);
+                DrawLog(hdc);
                 EndPaint(hwnd, &ps);
                 // DrawHexText(hwnd);
                 // DrawGrid(hwnd);
