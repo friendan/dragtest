@@ -353,7 +353,7 @@ namespace MainWindow
                     fileInfo.filePath = fullPath;
                     fileInfo.createTime = findData.ftCreationTime;
                     tempImageFiles.push_back(fileInfo);
-                    AppUtil::SaveLog(fullPath);
+                    // AppUtil::SaveLog(fullPath);
                 }
 
             } while (FindNextFile(hFind, &findData));
@@ -380,6 +380,10 @@ namespace MainWindow
             delete pPath;
         }
 
+        for(auto& fileInfo : MainWindow::gImageFiles){
+            AppUtil::SaveLog(fileInfo.filePath);
+        }
+
         AppUtil::SaveLog("gImageFiles.size() ", gImageFiles.size());
         ExtractImageData(folderPath);
 
@@ -394,10 +398,12 @@ namespace MainWindow
         std::string strDir = AppUtil::Utf16ToUtf8(folderPath);
         std::filesystem::path dirPath(strDir);
         std::filesystem::path filePath;
+        std::ostringstream hexStrStream;
         bool parseFileName = true;
 
         for(auto& fileInfo : MainWindow::gImageFiles){
             AppUtil::SaveLog(fileInfo.filePath);
+            AppUtil::UpdateStatusBarText(gStatusBar, 2, fileInfo.filePath.c_str());
             std::string imagePath = AppUtil::Utf16ToUtf8(fileInfo.filePath);
             std::vector<std::vector<ImageUtil::PixelInfo>> pixelList = ImageUtil::TraverseImagePixels(imagePath);
             AppUtil::SaveLog("pixelList.size() ", pixelList.size());
@@ -415,10 +421,11 @@ namespace MainWindow
                 file.close();
             }else{
                 std::string hexStr = getHexStrFromPixelList(pixelList);
-                AppUtil::hexStrToFile(hexStr, filePath.string());
+                hexStrStream << hexStr;
             }
         }
 
+        AppUtil::hexStrToFile(hexStrStream.str(), filePath.string());
         AppUtil::UpdateStatusBarText(gStatusBar, 2, std::string("ok finish"));
     }
 
@@ -564,8 +571,8 @@ namespace MainWindow
         hexStrStream << ColorListToHexString(abcGridList);
 
         hexStr = hexStrStream.str();
-        AppUtil::SaveLog("hexStr ", hexStr);
-        AppUtil::SaveLog("hexStrToStr ", AppUtil::hexStrToStr(hexStr));
+        // AppUtil::SaveLog("hexStr ", hexStr);
+        // AppUtil::SaveLog("hexStrToStr ", AppUtil::hexStrToStr(hexStr));
         return hexStr;
     }
 
