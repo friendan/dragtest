@@ -7,14 +7,14 @@
 
 namespace AppConst
 {
-    constexpr int GRID_SIZE = 8;
+    constexpr int GRID_SIZE = 2;
     constexpr int GRID_OFFSET_X = 2;
     constexpr int GRID_OFFSET_Y = 2;
     constexpr COLORREF GRID_COLOR_A = RGB(255, 255, 255);   // 纯白色
     constexpr COLORREF GRID_COLOR_B = RGB(255, 255, 0);     // 纯黄色（亮黄）
     constexpr COLORREF GRID_COLOR_C = RGB(0, 255, 255);     // 青色（天蓝色）
     constexpr COLORREF COLOR_BLACK  = RGB(0, 0, 0);         // 纯黑色
-    constexpr const wchar_t* SLAVE_APP_TITLE = L"GridMap";
+    constexpr const wchar_t* SLAVE_APP_TITLE = L"GridGame";
     //std::string utf8_str = u8"中文测试😀"; // C++11+支持u8前缀标识UTF-8字面量
 
     // 索引0-15 → 字符0-F

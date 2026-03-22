@@ -57,7 +57,7 @@ namespace SlaveWindow
         gMainWindow = CreateWindowEx(
             WS_EX_CLIENTEDGE,
             g_szClassName,
-            L"GridGame",
+            AppConst::SLAVE_APP_TITLE,
             WS_OVERLAPPEDWINDOW | WS_VSCROLL, // 加垂直滚动条，方便查看多内容
             CW_USEDEFAULT, CW_USEDEFAULT, 1000, 700,
             NULL, NULL, hInstance, NULL
