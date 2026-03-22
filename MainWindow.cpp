@@ -293,7 +293,6 @@ namespace MainWindow
         // imgProcess.detach();
 
         AddLogLine(L"ready...");
-        AddLogLine(L"程序启动成功！");
 
         // 消息循环
         MSG msg = {0};
@@ -440,6 +439,15 @@ namespace MainWindow
                 if (wParam == VK_F2) { // F2
                     RefreshWindow(hwnd);
                     // UpdateStatusBarText(2, L"已刷新 | F2 刷新 | 拖拽文件到窗口"); // 临时更新第3列
+                }
+                else if(wParam == VK_RETURN){
+                    std::string tmpLogStr = AppUtil::GetRandHexString(AppUtil::GetRandNumber(16, 1024));
+                    AddLogLine(tmpLogStr);
+                }
+                else if(wParam == VK_ESCAPE){
+                    std::lock_guard<std::mutex> lock(gLogMutex);
+                    gLogLines.clear();
+                    RefreshWindow(hwnd);
                 }
                 break;
             }
