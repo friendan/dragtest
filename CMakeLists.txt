@@ -50,7 +50,10 @@ set(MainAppSrcList
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${MainAppSrcList})
 add_executable(MainApp WIN32 ${MainAppSrcList})
 target_link_libraries(MainApp PRIVATE shell32.lib comctl32.lib shlwapi.lib gdiplus.lib)
-
+set_target_properties(MainApp PROPERTIES
+    OUTPUT_NAME_RELEASE "GridTriad"
+    OUTPUT_NAME_DEBUG   "GridTriad"
+)
 
 #=================================================
 set(SlaveAppSrcList
