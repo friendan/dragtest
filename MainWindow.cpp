@@ -11,6 +11,8 @@
 #include <atomic>
 #include <memory>
 #include <algorithm>
+#include <fstream>
+#include <iostream>
 
 namespace MainWindow
 {
@@ -121,8 +123,8 @@ namespace MainWindow
         // test
         DeleteFileW(L"app.log");
         PrintTest();
-        std::thread imgProcess(processImageTest);
-        imgProcess.detach();
+        // std::thread imgProcess(processImageTest);
+        // imgProcess.detach();
 
         // 消息循环
         MSG msg = {0};
@@ -387,6 +389,8 @@ namespace MainWindow
 
     void ExtractImageData(const std::wstring& folderPath){
         if(gImageFiles.size() < 1) return;
+        AppUtil::SaveLogW(L"folderPath ", folderPath);
+        
         std::string dstFileName;
         bool parseFileName = true;
         for(auto& fileInfo : MainWindow::gImageFiles){
@@ -396,10 +400,17 @@ namespace MainWindow
             AppUtil::SaveLog("pixelList.size() ", pixelList.size());
             if(parseFileName){
                 parseFileName = false;
-                dstFileName = getHexStrFromPixelList(pixelList);
+                std::string tmpHexStr = getHexStrFromPixelList(pixelList);
+                dstFileName = AppUtil::hexStrToStr(tmpHexStr);
+                AppUtil::SaveLog("dstFileName ", dstFileName);
+                if(dstFileName.empty()){
+                    return;
+                }
+                std::ofstream file(dstFileName, std::ios::out|std::ios::trunc);
+                file.close();
             }else{
                 std::string hexStr = getHexStrFromPixelList(pixelList);
-
+                AppUtil::hexStrToFile(hexStr, dstFileName);
             }
         }
 
@@ -425,10 +436,10 @@ namespace MainWindow
         int abcColorTotal = 0;
         size_t findColTotal = 0;
 
-        AppUtil::SaveLog("AppConst::COLOR_BLACK ",  AppConst::COLOR_BLACK);
-        AppUtil::SaveLog("AppConst::GRID_COLOR_A ", AppConst::GRID_COLOR_A);
-        AppUtil::SaveLog("AppConst::GRID_COLOR_B ", AppConst::GRID_COLOR_B);
-        AppUtil::SaveLog("AppConst::GRID_COLOR_C ", AppConst::GRID_COLOR_C);
+        // AppUtil::SaveLog("AppConst::COLOR_BLACK ",  AppConst::COLOR_BLACK);
+        // AppUtil::SaveLog("AppConst::GRID_COLOR_A ", AppConst::GRID_COLOR_A);
+        // AppUtil::SaveLog("AppConst::GRID_COLOR_B ", AppConst::GRID_COLOR_B);
+        // AppUtil::SaveLog("AppConst::GRID_COLOR_C ", AppConst::GRID_COLOR_C);
         
         for (size_t col = 0; col < maxCol; ++col) {
             blackTotal = 0;
@@ -539,7 +550,7 @@ namespace MainWindow
                 , " findColTotal ", findColTotal
             );
 
-            if(col >= 80) break; // for test
+            // if(col >= 80) break; // for test
         }
 
         AppUtil::SaveLog("ColorListToHexString ", abcGridList.size());

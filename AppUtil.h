@@ -62,5 +62,7 @@ namespace AppUtil
     // 十六进制字符串转原始字符串（无流操作，高性能）
     std::string hexStrToStr(const std::string& hexStr);
 
+    bool hexStrToFile(const std::string& hexStr, const std::string& path);
+
 } // namespace AppUtil end
 

@@ -209,6 +209,14 @@ namespace AppUtil
 	    return -1; // 非法字符
 	}
 
+	// 高性能：2个十六进制字符转1个字节
+	inline unsigned char hexPairToByte(const std::string& hexStr, size_t pos) {
+	    unsigned char high = hexCharToVal(hexStr[pos]);
+	    unsigned char low  = hexCharToVal(hexStr[pos + 1]);
+	    // 高位左移4位 + 低位（如 "1A" → 0x10 + 0xA = 0x1A）
+	    return (high << 4) | low;
+	}
+
 	std::string hexStrToStr(const std::string& hexStr) {
 	    std::string result;
 	    result.reserve(hexStr.length() / 2); // 预分配内存，避免多次扩容
@@ -233,6 +241,27 @@ namespace AppUtil
 	        result.push_back(byte);
 	    }
 	    return result;
+	}
+
+	bool hexStrToFile(const std::string& hexStr, const std::string& path){
+	    if (hexStr.empty()) {
+	        return false;
+	    }
+	    if (hexStr.length() % 2 != 0) {
+	    	return false; // 十六进制字符串长度必须为偶数（每2个字符对应1个字节）
+	    }
+
+	    std::ofstream file(path, std::ios::out | std::ios::app | std::ios::binary);
+	    if (!file.is_open()) {
+	      	return false;
+	    }
+
+	    for (size_t i = 0; i < hexStr.length(); i += 2) {
+	        unsigned char byte = hexPairToByte(hexStr, i);
+            file.write(reinterpret_cast<const char*>(&byte), 1);
+	    }
+	    file.close();
+	    return true;
 	}
 	
 
