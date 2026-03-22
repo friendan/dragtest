@@ -44,6 +44,7 @@ set(MainAppSrcList
 	ImageUtil.h
 	ImageUtil.cpp
 	main.cpp
+	MainApp.rc
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${MainAppSrcList})

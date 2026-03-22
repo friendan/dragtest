@@ -4,6 +4,7 @@
 #include "ImageUtil.h"
 #include "DrawUtil.h"
 #include "AppUtil.h"
+#include "ResourceIDs.h"
 #include <commctrl.h>
 #include <Shlwapi.h>
 #include <thread>
@@ -187,8 +188,14 @@ namespace MainWindow
     {
         switch (msg) {
             // 窗口创建时（可选，也可在StartMainWindow中创建状态栏）
-            case WM_CREATE:
+            case WM_CREATE:{
+                static HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAIN_ICON));
+                if (hIcon) {
+                    SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);      // 设置窗口大图标
+                    SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);    // 设置窗口小图标（标题栏）
+                }
                 break;
+            }
 
             // 处理文件拖拽（仅创建线程，无耗时操作）
             case WM_DROPFILES: {
