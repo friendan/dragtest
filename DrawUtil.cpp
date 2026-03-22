@@ -199,12 +199,11 @@ namespace DrawUtil
         GetWindowGridVector(hwnd, rectVector);
 
         WCHAR szTitle[1024] = {0};
-        wsprintf(szTitle, L"%s %dx%d|%d|%d"
+        wsprintf(szTitle, L"%s %dx%d|%d"
             , AppConst::SLAVE_APP_TITLE
             , width
             , height
             , rectVector.size()
-            , gPageCharNum
         );
         SetWindowTextW(hwnd, szTitle);
         
@@ -215,10 +214,12 @@ namespace DrawUtil
         WCHAR szCharInfo[64] = {0};
         wsprintf(szCharInfo, L"%d", hexStr.size());
         AppUtil::UpdateStatusBarText(statusBar, 1, szCharInfo);
-
-        if(hexStr.size() < 128){
-            AppUtil::UpdateStatusBarText(statusBar, 2, hexStr);
-        }
+        
+        WCHAR szPageChar[1024] = {0};
+        wsprintf(szPageChar, L"%d"
+            , gPageCharNum
+        );
+        AppUtil::UpdateStatusBarText(statusBar, 2, szPageChar);
     }
 
     void DrawBackground(HWND hwnd){
