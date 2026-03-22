@@ -1,0 +1,38 @@
+// GridMap.rc - 资源文件，用于设置程序图标
+#include <windows.h>
+#include "ResourceIDs.h"  // 引入ID声明头文件
+
+// IDI_MAIN_ICON 是自定义图标ID（可任意命名，如 IDI_GRIDMAP_ICON）
+IDI_MAIN_ICON ICON "GridMap.ico"
+
+// 可选：设置版本信息（若需要）
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+FILEFLAGS 0x1L
+#else
+FILEFLAGS 0x0L
+#endif
+FILEOS 0x40004L
+FILETYPE 0x1L
+FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404B0"  // 中文（中国）+ Unicode
+        BEGIN
+            VALUE "CompanyName", "GridMap\0"
+            VALUE "FileDescription", "GridMap 程序\0"
+            VALUE "FileVersion", "1.0.0.0\0"
+            VALUE "ProductName", "GridMap\0"
+            VALUE "ProductVersion", "1.0.0.0\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200  // 中文（中国）+ Unicode
+    END
+END
+

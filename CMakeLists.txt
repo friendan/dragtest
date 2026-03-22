@@ -46,6 +46,7 @@ set(SlaveAppSrcList
 	AppUtil.h
 	AppUtil.cpp
 	secondary.cpp
+	GridMap.rc
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SlaveAppSrcList})

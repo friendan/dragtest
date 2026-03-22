@@ -3,6 +3,7 @@
 #include "AppConstants.h"
 #include "DrawUtil.h"
 #include "AppUtil.h"
+#include "ResourceIDs.h"
 #include <commctrl.h>
 #include <shlwapi.h>
 #include <thread>
@@ -56,7 +57,7 @@ namespace SlaveWindow
         gMainWindow = CreateWindowEx(
             WS_EX_CLIENTEDGE,
             g_szClassName,
-            L"GridMap",
+            L"GridGame",
             WS_OVERLAPPEDWINDOW | WS_VSCROLL, // 加垂直滚动条，方便查看多内容
             CW_USEDEFAULT, CW_USEDEFAULT, 1000, 700,
             NULL, NULL, hInstance, NULL
@@ -127,8 +128,14 @@ namespace SlaveWindow
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         switch (msg) {
-            case WM_CREATE:
+            case WM_CREATE:{
+                static HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAIN_ICON));
+                if (hIcon) {
+                    SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);      // 设置窗口大图标
+                    SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);    // 设置窗口小图标（标题栏）
+                }
                 break;
+            }
             case WM_DROPFILES: {
                 HDROP hDrop = (HDROP)wParam;
                 wchar_t szFilePath[MAX_PATH] = {0};
