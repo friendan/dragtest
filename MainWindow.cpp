@@ -44,9 +44,10 @@ namespace MainWindow
     std::vector<std::wstring> gLogLines; // 日志行缓存
     std::mutex gLogMutex;               // 日志操作互斥锁
     HWND gLogScrollBar = NULL;          // 日志区域滚动条
-    int gLogLineHeight = 20;            // 每行日志高度（像素）
+    int gLogLineHeight = 28;            // 每行日志高度（像素）
     int gLogTopOffset = 0;              // 日志滚动偏移量
     RECT gLogAreaRect;                  // 日志显示区域（排除状态栏）
+    HFONT gLogFont = NULL;
 
     LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     BOOL RegisterWindowClass(HINSTANCE hInstance);
@@ -84,6 +85,31 @@ namespace MainWindow
             NULL
         );
         SendMessage(gLogScrollBar, SBM_SETRANGE, 0, MAKELPARAM(0, 0));
+
+        // ========== 创建全局日志字体（仅一次） ==========
+        HDC hdc = GetDC(hwnd);
+        int pointSize = 12;
+        int logpixelsy = GetDeviceCaps(hdc, LOGPIXELSY);
+        int fontHeight = -MulDiv(pointSize, logpixelsy, 72);
+        gLogFont = CreateFont(
+            fontHeight,                // 14pt高度
+            0,                         // 宽度自动
+            0, 0,                      // 角度
+            FW_NORMAL,                 // 常规粗细
+            FALSE, FALSE, FALSE,       // 无特殊样式
+            DEFAULT_CHARSET,
+            OUT_DEFAULT_PRECIS,
+            CLIP_DEFAULT_PRECIS,
+            ANTIALIASED_QUALITY,       // 抗锯齿
+            FF_DONTCARE,
+            L"微软雅黑"                // 字体名
+        );
+        ReleaseDC(hwnd, hdc);
+
+        // 容错：创建失败则用系统默认字体
+        if (gLogFont == NULL) {
+            gLogFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+        }
     }
 
 
@@ -110,7 +136,7 @@ namespace MainWindow
             SendMessage(gLogScrollBar, SBM_SETRANGE, 0, MAKELPARAM(0, maxScrollPos));
             SendMessage(gLogScrollBar, SBM_SETPOS, gLogTopOffset, 0);
         }
-        
+
         PostMessage(gMainWindow, WM_ADD_LOG_LINE, 0, 0);
     }
 
@@ -121,29 +147,41 @@ namespace MainWindow
 
     // 绘制日志（在WM_PAINT中调用）
     void DrawLog(HDC hdc) {
+       // 线程安全锁
         std::lock_guard<std::mutex> lock(gLogMutex);
         if (gLogLines.empty()) return;
 
-        // 设置文本颜色和背景色
-        SetTextColor(hdc, RGB(0, 255, 0)); // 绿色日志文本
-        SetBkColor(hdc, RGB(0, 0, 0));     // 黑色背景
-        SetBkMode(hdc, OPAQUE);
+        // ======= 复用全局字体（仅选入，不重复创建） ==========
+        if (gLogFont == NULL) { // 极端容错：字体未创建则用默认
+            gLogFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+        }
+        HFONT hOldFont = (HFONT)SelectObject(hdc, gLogFont);
 
-        // 计算可显示的行数
+        // ========== 设置文本样式 ==========
+        SetTextColor(hdc, RGB(0, 255, 0));  // 绿色文字
+        SetBkColor(hdc, RGB(0, 0, 0));      // 黑色背景
+        SetBkMode(hdc, OPAQUE);             // 不透明
+
+        // ========== 计算可视行数 ==========
         int visibleLines = (gLogAreaRect.bottom - gLogAreaRect.top) / gLogLineHeight;
         int startLine = gLogTopOffset;
         int endLine = min(startLine + visibleLines, (int)gLogLines.size());
 
-        // 逐行绘制日志
+        // ========== 逐行绘制 ==========
         int yPos = gLogAreaRect.top;
         for (int i = startLine; i < endLine; ++i) {
-            TextOut(hdc, 
-                gLogAreaRect.left + 5,  // 文本x偏移
-                yPos,                   // 文本y坐标
-                gLogLines[i].c_str(),   // 日志文本
-                (int)gLogLines[i].length()); // 文本长度
-            yPos += gLogLineHeight;     // 下一行y坐标
+            TextOut(
+                hdc,
+                gLogAreaRect.left + 5,
+                yPos,
+                gLogLines[i].c_str(),
+                (int)gLogLines[i].length()
+            );
+            yPos += gLogLineHeight;
         }
+
+        // ========== 恢复旧字体（仅恢复，不删除全局字体） ==========
+        SelectObject(hdc, hOldFont);
     }
 
     // 处理滚动条消息
@@ -470,6 +508,7 @@ namespace MainWindow
                     gWorkerThread->join();
                 }
                 PostQuitMessage(0);
+                if (gLogFont) DeleteObject(gLogFont); // 释放字体
                 break;
 
             default:
