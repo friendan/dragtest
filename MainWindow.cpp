@@ -101,12 +101,12 @@ namespace MainWindow
         gMainWindow = CreateWindowEx(
             WS_EX_CLIENTEDGE,
             g_szClassName,
-            L"Console",
+            L"GridTriad",
             WS_OVERLAPPEDWINDOW | WS_VSCROLL, // 加垂直滚动条，方便查看多内容
             CW_USEDEFAULT, CW_USEDEFAULT, 1024, 768,
             NULL, NULL, hInstance, NULL
         );
-
+        
         if (!gMainWindow) {
             MessageBox(NULL, L"窗口创建失败！", L"错误", MB_ICONEXCLAMATION | MB_OK);
             return;
