@@ -61,22 +61,20 @@ namespace MainWindow
 
      // 初始化日志区域（窗口创建后调用）
     void InitLogArea(HWND hwnd) {
-        // 获取客户区大小，排除状态栏高度（24像素）
         RECT rcClient;
         GetClientRect(hwnd, &rcClient);
         SetRect(&gLogAreaRect, 
             rcClient.left + 10,          // 左边距10
             rcClient.top + 10,           // 上边距10
-            rcClient.right - 10,         // 右边距10
+            rcClient.right - 27,         // 右边距=滚动条宽度17+10，让滚动条贴窗口右边缘
             rcClient.bottom - 34);       // 下边距=状态栏高度24+10
-        
-        // 创建垂直滚动条
+        // 创建垂直滚动条（贴窗口右边缘）
         gLogScrollBar = CreateWindowEx(
             0,
             L"SCROLLBAR",
             NULL,
             WS_CHILD | WS_VISIBLE | SBS_VERT,
-            gLogAreaRect.right - 17,     // 滚动条x坐标（日志区域右边界-17）
+            rcClient.right - 17,         // 滚动条x坐标：窗口右边缘-17（贴边）
             gLogAreaRect.top,            // 滚动条y坐标
             17,                          // 滚动条宽度
             gLogAreaRect.bottom - gLogAreaRect.top, // 滚动条高度
@@ -85,28 +83,34 @@ namespace MainWindow
             GetModuleHandle(NULL),
             NULL
         );
-
-        // 设置滚动条范围
         SendMessage(gLogScrollBar, SBM_SETRANGE, 0, MAKELPARAM(0, 0));
     }
+
 
     // 添加日志行（线程安全，支持多线程调用）
     void AddLogLine(const std::wstring& logLine) {
         std::lock_guard<std::mutex> lock(gLogMutex);
-        
-        // 1. 添加日志行，超出最大行数则删除最旧的行
+    
+        // 添加日志行、裁剪最大行数
         gLogLines.push_back(logLine);
         if (gLogLines.size() > LOG_MAX_LINES) {
             gLogLines.erase(gLogLines.begin());
-            gLogTopOffset = max(0, gLogTopOffset - 1); // 调整偏移
+            gLogTopOffset = max(0, gLogTopOffset - 1);
         }
 
-        // 2. 更新滚动条范围
-        int maxScrollPos = max(0, (int)gLogLines.size() - (gLogAreaRect.bottom - gLogAreaRect.top) / gLogLineHeight);
-        SendMessage(gLogScrollBar, SBM_SETRANGE, 0, MAKELPARAM(0, maxScrollPos));
-        SendMessage(gLogScrollBar, SBM_SETPOS, gLogTopOffset, 0);
-
-        // 3. 通知主窗口刷新日志（线程安全：用PostMessage）
+        // 计算滚动条最大位置
+        int visibleLines = (gLogAreaRect.bottom - gLogAreaRect.top) / gLogLineHeight;
+        int maxScrollPos = max(0, (int)gLogLines.size() - visibleLines);
+        
+        // 日志行数 <= 可视行数时，隐藏滚动条；否则显示
+        if (gLogLines.size() <= visibleLines) {
+            ShowWindow(gLogScrollBar, SW_HIDE);
+        } else {
+            ShowWindow(gLogScrollBar, SW_SHOW);
+            SendMessage(gLogScrollBar, SBM_SETRANGE, 0, MAKELPARAM(0, maxScrollPos));
+            SendMessage(gLogScrollBar, SBM_SETPOS, gLogTopOffset, 0);
+        }
+        
         PostMessage(gMainWindow, WM_ADD_LOG_LINE, 0, 0);
     }
 
@@ -221,7 +225,8 @@ namespace MainWindow
             WS_EX_CLIENTEDGE,
             g_szClassName,
             L"GridTriad",
-            WS_OVERLAPPEDWINDOW | WS_VSCROLL, // 加垂直滚动条，方便查看多内容
+            // WS_OVERLAPPEDWINDOW | WS_VSCROLL, // 加垂直滚动条，方便查看多内容
+            WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT, 1024, 768,
             NULL, NULL, hInstance, NULL
         );
@@ -237,7 +242,7 @@ namespace MainWindow
         CreateStatusBar(gMainWindow);
         DragAcceptFiles(gMainWindow, TRUE); // 启用拖拽
         DrawUtil::InitDraw();
-        InitLogArea(gMainWindow);
+        // InitLogArea(gMainWindow);
 
         ShowWindow(gMainWindow, nCmdShow);
         UpdateWindow(gMainWindow);
@@ -426,17 +431,19 @@ namespace MainWindow
                 // 更新状态栏列宽
                 SendMessage(gStatusBar, SB_SETPARTS, STATUS_BAR_PARTS, (LPARAM)gStatusBarWidths);
 
-                 // 调整日志区域和滚动条
+                 // 调整日志区域和滚动条（修复后）
                 SetRect(&gLogAreaRect, 
                     10, 10, 
-                    clientWidth - 27, // 减去滚动条宽度17+10边距
+                    clientWidth - 27, // 日志区域右边界=窗口宽度-滚动条宽度17-10边距
                     clientHeight - 34);
+                
                 if (gLogScrollBar) {
+                    // 滚动条贴窗口右边缘
                     MoveWindow(gLogScrollBar, 
-                        gLogAreaRect.right, 
-                        gLogAreaRect.top, 
-                        17, 
-                        gLogAreaRect.bottom - gLogAreaRect.top, 
+                        clientWidth - 17,    // x坐标：窗口右边缘-17
+                        gLogAreaRect.top,    // y坐标
+                        17,                  // 宽度
+                        gLogAreaRect.bottom - gLogAreaRect.top, // 高度
                         TRUE);
                 }
 
